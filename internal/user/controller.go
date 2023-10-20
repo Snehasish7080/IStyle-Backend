@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -17,11 +18,14 @@ func NewUserController(storage *UserStorage) *UserController {
 	}
 }
 
+var validate = validator.New()
+
 type signUpRequest struct {
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	UserName  string `json:"userName"`
-	Email     string `json:"email"`
+	FirstName string `json:"firstName" validate:"required"`
+	LastName  string `json:"lastName" validate:"required"`
+	UserName  string `json:"userName" validate:"required"`
+	Email     string `json:"email" validate:"required,email"`
+	Password  string `json:"password" validate:"required"`
 }
 
 type signUpResponse struct {
@@ -33,6 +37,7 @@ type signUpResponse struct {
 func (u *UserController) register(c *fiber.Ctx) error {
 	var req signUpRequest
 
+	c.BodyParser(&req)
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(signUpResponse{
 			Message: "Invalid request body",
@@ -40,7 +45,15 @@ func (u *UserController) register(c *fiber.Ctx) error {
 		})
 	}
 
-	token, err := u.storage.signUp(req.FirstName, req.LastName, req.UserName, req.Email, c.Context())
+	err := validate.Struct(req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(signUpResponse{
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	token, err := u.storage.signUp(req.FirstName, req.LastName, req.UserName, req.Email, req.Password, c.Context())
 
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(signUpResponse{
@@ -83,7 +96,7 @@ func (u *UserController) verifyOtp(c *fiber.Ctx) error {
 		return errors.New("not able to covert")
 	}
 
-	token, err := u.storage.verify(req.Otp, userName, c.Context())
+	token, err := u.storage.verifyEmail(req.Otp, userName, c.Context())
 
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(verifyResponse{
