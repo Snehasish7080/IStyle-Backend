@@ -11,7 +11,8 @@ type User struct {
 	Password         string `json:"password"`
 	Created_at       string `json:"created_at"`
 	Updated_at       string `json:"updated_at"`
-	Otp              string `json:"otp"`
+	EmailOtp         string `json:"emailOtp"`
+	MobileOtp        string `json:"mobileOtp"`
 	IsEmailVerified  bool   `json:"isEmailVerified"`
 	IsMobileVerified bool   `json:"isMobileVerified"`
 	IsComplete       bool   `json:"isComplete"`

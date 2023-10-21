@@ -73,17 +73,25 @@ type verifyRequest struct {
 	Otp string `json:"otp"`
 }
 type verifyResponse struct {
-	Token   string `json:"token"`
+	Token   string `json:"token" validate:"required"`
 	Message string `json:"message"`
 	Success bool   `json:"success"`
 }
 
-func (u *UserController) verifyOtp(c *fiber.Ctx) error {
+func (u *UserController) verifyEmail(c *fiber.Ctx) error {
 
 	var req verifyRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(verifyResponse{
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	err := validate.Struct(req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(signUpResponse{
 			Message: "Invalid request body",
 			Success: false,
 		})
@@ -97,6 +105,49 @@ func (u *UserController) verifyOtp(c *fiber.Ctx) error {
 	}
 
 	token, err := u.storage.verifyEmail(req.Otp, userName, c.Context())
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(verifyResponse{
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(verifyResponse{
+		Token:   token,
+		Success: true,
+		Message: "Verified",
+	})
+
+}
+
+func (u *UserController) verifyMobile(c *fiber.Ctx) error {
+
+	var req verifyRequest
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(verifyResponse{
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	err := validate.Struct(req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(signUpResponse{
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	localData := c.Locals("userName")
+	userName, cnvErr := localData.(string)
+
+	if !cnvErr {
+		return errors.New("not able to covert")
+	}
+
+	token, err := u.storage.verifyMobile(req.Otp, userName, c.Context())
 
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(verifyResponse{

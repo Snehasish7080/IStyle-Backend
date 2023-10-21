@@ -52,8 +52,8 @@ func (u *UserStorage) signUp(firstName string, lastName string, userName string,
 	_, err = session.ExecuteWrite(ctx,
 		func(tx neo4j.ManagedTransaction) (any, error) {
 			return tx.Run(ctx,
-				"CREATE (:User {firstName: $firstName, lastName: $lastName, userName: $userName, email: $email, password: $password, otp:$otp, isEmailVerified:$isEmailVerified, isMobileVerified:$isMobileVerified, isComplete:$isComplete, created_at:datetime($createdAt), updated_at:datetime($updatedAt)})",
-				map[string]any{"firstName": firstName, "lastName": lastName, "userName": userName, "email": email, "password": hashedPassword, "otp": generatedOtp, "isEmailVerified": false, "isMobileVerified": false, "isComplete": false, "createdAt": now.Format(time.RFC3339), "updatedAt": now.Format(time.RFC3339)})
+				"CREATE (:User {firstName: $firstName, lastName: $lastName, userName: $userName, email: $email, password: $password, emailOtp:$emailOtp, isEmailVerified:$isEmailVerified, isMobileVerified:$isMobileVerified, isComplete:$isComplete, created_at:datetime($createdAt), updated_at:datetime($updatedAt)})",
+				map[string]any{"firstName": firstName, "lastName": lastName, "userName": userName, "email": email, "password": hashedPassword, "emailOtp": generatedOtp, "isEmailVerified": false, "isMobileVerified": false, "isComplete": false, "createdAt": now.Format(time.RFC3339), "updatedAt": now.Format(time.RFC3339)})
 		})
 
 	if err != nil {
@@ -77,7 +77,7 @@ func (u *UserStorage) verifyEmail(otp string, userName string, ctx context.Conte
 	result, err := session.ExecuteRead(ctx,
 		func(tx neo4j.ManagedTransaction) (any, error) {
 			result, err := tx.Run(ctx,
-				"MATCH (u:User {userName:$userName}) RETURN u.otp AS otp",
+				"MATCH (u:User {userName:$userName}) RETURN u.emailOtp AS otp",
 				map[string]interface{}{
 					"userName": userName,
 				},
@@ -92,8 +92,8 @@ func (u *UserStorage) verifyEmail(otp string, userName string, ctx context.Conte
 			}
 
 			otp, _ := record.Get("otp")
-			return otp.(string), nil
 
+			return otp.(string), nil
 		})
 
 	if err != nil {
@@ -131,7 +131,7 @@ func (u *UserStorage) verifyMobile(otp string, userName string, ctx context.Cont
 	result, err := session.ExecuteRead(ctx,
 		func(tx neo4j.ManagedTransaction) (any, error) {
 			result, err := tx.Run(ctx,
-				"MATCH (u:User {userName:$userName}) RETURN u.otp AS otp",
+				"MATCH (u:User {userName:$userName}) RETURN u.mobileOtp AS otp",
 				map[string]interface{}{
 					"userName": userName,
 				},
@@ -146,6 +146,7 @@ func (u *UserStorage) verifyMobile(otp string, userName string, ctx context.Cont
 			}
 
 			otp, _ := record.Get("otp")
+
 			return otp.(string), nil
 
 		})
