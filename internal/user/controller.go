@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/zone/IStyle/pkg/otp"
 )
 
 type UserController struct {
@@ -70,10 +71,10 @@ func (u *UserController) register(c *fiber.Ctx) error {
 }
 
 type verifyRequest struct {
-	Otp string `json:"otp"`
+	Otp string `json:"otp" validate:"required"`
 }
 type verifyResponse struct {
-	Token   string `json:"token" validate:"required"`
+	Token   string `json:"token"`
 	Message string `json:"message"`
 	Success bool   `json:"success"`
 }
@@ -165,7 +166,8 @@ func (u *UserController) verifyMobile(c *fiber.Ctx) error {
 }
 
 type loginRequest struct {
-	Mobile string `json:"mobile"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
 type loginResponse struct {
 	Token   string `json:"token"`
@@ -183,7 +185,15 @@ func (u *UserController) loginUser(c *fiber.Ctx) error {
 		})
 	}
 
-	token, err := u.storage.login(req.Mobile, c.Context())
+	err := validate.Struct(req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(loginResponse{
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	token, err := u.storage.login(req.Email, req.Password, c.Context())
 
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(loginResponse{
@@ -194,7 +204,7 @@ func (u *UserController) loginUser(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(loginResponse{
 		Token:   token,
 		Success: true,
-		Message: "Otp sent successfully",
+		Message: "Found Successfully",
 	})
 }
 
@@ -236,9 +246,8 @@ func (u *UserController) getUserDetail(c *fiber.Ctx) error {
 }
 
 type updateUserDetailRequest struct {
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Image     string `json:"image"`
+	Mobile string `json:"mobile" validate:"required"`
+	Image  string `json:"image"`
 }
 type updateUserDetailResponse struct {
 	Message string `json:"message"`
@@ -249,6 +258,14 @@ func (u *UserController) updateUserDetail(c *fiber.Ctx) error {
 	var req updateUserDetailRequest
 
 	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(updateUserDetailResponse{
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	err := validate.Struct(req)
+	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(updateUserDetailResponse{
 			Message: "Invalid request body",
 			Success: false,
@@ -270,6 +287,12 @@ func (u *UserController) updateUserDetail(c *fiber.Ctx) error {
 		if updateFields[k] == "" {
 			delete(updateFields, k)
 		}
+	}
+
+	generatedOtp := otp.EncodeToString(6)
+
+	if generatedOtp != "" {
+		updateFields["mobileOtp"] = generatedOtp
 	}
 
 	message, err := u.storage.updateUser(userName, updateFields, c.Context())

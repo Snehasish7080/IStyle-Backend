@@ -180,22 +180,22 @@ func (u *UserStorage) verifyMobile(otp string, userName string, ctx context.Cont
 	return verifyToken, nil
 }
 
-func (u *UserStorage) login(mobile string, ctx context.Context) (string, error) {
+func (u *UserStorage) login(email string, password string, ctx context.Context) (string, error) {
 	session := u.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: u.dbName, AccessMode: neo4j.AccessModeWrite})
 	defer session.Close(ctx)
 
-	isMobileExist := u.mobileExists(mobile, ctx)
+	isEmailExist := u.emailExists(email, ctx)
 
-	if !isMobileExist {
+	if !isEmailExist {
 		return "", errors.New("mobile not registered")
 	}
 
 	result, _ := session.ExecuteRead(ctx,
 		func(tx neo4j.ManagedTransaction) (interface{}, error) {
 			result, err := tx.Run(ctx,
-				"MATCH (u:User {mobile:$mobile}) RETURN u.userName AS userName",
+				"MATCH (u:User {email:$email}) RETURN u.userName AS userName, u.password AS password, u.isMobileVerified AS isMobileVerified",
 				map[string]interface{}{
-					"mobile": mobile,
+					"email": email,
 				},
 			)
 			if err != nil {
@@ -206,33 +206,26 @@ func (u *UserStorage) login(mobile string, ctx context.Context) (string, error) 
 				return nil, err
 			}
 			userName, _ := record.Get("userName")
-			return userName.(string), nil
+			password, _ := record.Get("password")
+			isMobileVerified, _ := record.Get("isMobileVerified")
+			return &models.User{
+				UserName:         userName.(string),
+				Password:         password.(string),
+				IsMobileVerified: isMobileVerified.(bool),
+			}, nil
 		})
 
-	userName, convErr := result.(string)
+	user, convErr := result.(*models.User)
 
 	if !convErr {
 		return "", errors.New("not able to covert")
 	}
 
-	generatedOtp := otp.EncodeToString(4)
-	_, err := session.ExecuteWrite(ctx,
-		func(tx neo4j.ManagedTransaction) (any, error) {
-			return tx.Run(ctx,
-				"MATCH (u:User {userName:$userName}) SET u.isVerified=false, u.otp=$otp",
-				map[string]interface{}{
-					"userName": userName,
-					"otp":      generatedOtp,
-				},
-			)
-		},
-	)
-
-	if err != nil {
-		return "", err
+	if !hash.CheckPasswordHash(password, user.Password) {
+		return "", errors.New("incorrect email or password")
 	}
 
-	verifyToken, err := jwtclaim.CreateJwtToken(userName, false)
+	verifyToken, err := jwtclaim.CreateJwtToken(user.UserName, user.IsMobileVerified)
 	if err != nil {
 		return "", err
 	}
@@ -283,13 +276,15 @@ func (u *UserStorage) updateUser(userName string, userField map[string]interface
 	session := u.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: u.dbName, AccessMode: neo4j.AccessModeWrite})
 	defer session.Close(ctx)
 
+	now := time.Now()
 	_, err := session.ExecuteWrite(ctx,
 		func(tx neo4j.ManagedTransaction) (any, error) {
 			return tx.Run(ctx,
-				"MATCH (u:User {userName:$userName}) SET u+=$fields",
+				"MATCH (u:User {userName:$userName}) SET u.updated_at=datetime($updatedAt), u+=$fields",
 				map[string]interface{}{
-					"userName": userName,
-					"fields":   userField,
+					"userName":  userName,
+					"updatedAt": now.Format(time.RFC3339),
+					"fields":    userField,
 				},
 			)
 		},
