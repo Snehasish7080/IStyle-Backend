@@ -187,7 +187,7 @@ func (u *UserStorage) login(email string, password string, ctx context.Context) 
 	isEmailExist := u.emailExists(email, ctx)
 
 	if !isEmailExist {
-		return "", errors.New("Email not registered")
+		return "", errors.New("email not registered")
 	}
 
 	result, _ := session.ExecuteRead(ctx,
