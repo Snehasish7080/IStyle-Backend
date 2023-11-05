@@ -272,6 +272,37 @@ func (u *UserStorage) getUser(userName string, ctx context.Context) (*models.Use
 
 }
 
+func (u *UserStorage) updateMobile(userName string, mobile string, otp string, ctx context.Context) (string, error) {
+	session := u.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: u.dbName, AccessMode: neo4j.AccessModeWrite})
+	defer session.Close(ctx)
+
+	isMobileExist := u.mobileExists(mobile, ctx)
+
+	if isMobileExist {
+		return "", errors.New("mobile already exists")
+	}
+
+	now := time.Now()
+	_, err := session.ExecuteWrite(ctx,
+		func(tx neo4j.ManagedTransaction) (any, error) {
+			return tx.Run(ctx,
+				"MATCH (u:User {userName:$userName}) SET u.updated_at=datetime($updatedAt), u.mobile=$mobile, u.mobileOtp=$mobileOtp",
+				map[string]interface{}{
+					"userName":  userName,
+					"updatedAt": now.Format(time.RFC3339),
+					"mobile":    mobile,
+					"mobileOtp": otp,
+				},
+			)
+		},
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	return "Update Successfully", nil
+}
 func (u *UserStorage) updateUser(userName string, userField map[string]interface{}, ctx context.Context) (string, error) {
 	session := u.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: u.dbName, AccessMode: neo4j.AccessModeWrite})
 	defer session.Close(ctx)

@@ -246,8 +246,10 @@ func (u *UserController) getUserDetail(c *fiber.Ctx) error {
 }
 
 type updateUserDetailRequest struct {
-	Mobile string `json:"mobile" validate:"required"`
-	Image  string `json:"image"`
+	Image     string `json:"image"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Bio       string `json:"bio"`
 }
 type updateUserDetailResponse struct {
 	Message string `json:"message"`
@@ -289,13 +291,58 @@ func (u *UserController) updateUserDetail(c *fiber.Ctx) error {
 		}
 	}
 
-	generatedOtp := otp.EncodeToString(6)
+	message, err := u.storage.updateUser(userName, updateFields, c.Context())
 
-	if generatedOtp != "" {
-		updateFields["mobileOtp"] = generatedOtp
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(updateUserDetailResponse{
+			Message: "Update failed",
+			Success: false,
+		})
+
 	}
 
-	message, err := u.storage.updateUser(userName, updateFields, c.Context())
+	return c.Status(fiber.StatusOK).JSON(updateUserDetailResponse{
+		Message: message,
+		Success: true,
+	})
+}
+
+type updateUserMobileRequest struct {
+	Mobile string `json:"mobile" validate:"required"`
+}
+type updateUserMobileResponse struct {
+	Message string `json:"message"`
+	Success bool   `json:"success"`
+}
+
+func (u *UserController) updateUserMobile(c *fiber.Ctx) error {
+	var req updateUserMobileRequest
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(updateUserMobileResponse{
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	err := validate.Struct(req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(updateUserMobileResponse{
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	localData := c.Locals("userName")
+	userName, cnvErr := localData.(string)
+
+	if !cnvErr {
+		return errors.New("not able to covert")
+	}
+
+	generatedOtp := otp.EncodeToString(6)
+
+	message, err := u.storage.updateMobile(userName, req.Mobile, generatedOtp, c.Context())
 
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(updateUserDetailResponse{
