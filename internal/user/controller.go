@@ -240,6 +240,7 @@ func (u *UserController) getUserDetail(c *fiber.Ctx) error {
 			FirstName: user.FirstName,
 			LastName:  user.LastName,
 			UserName:  user.UserName,
+			Bio:       user.Bio,
 		},
 		Message: "found successfully",
 		Success: true,

@@ -316,7 +316,7 @@ func (u *UserStorage) updateUser(userName string, userField map[string]interface
 	_, err := session.ExecuteWrite(ctx,
 		func(tx neo4j.ManagedTransaction) (any, error) {
 			return tx.Run(ctx,
-				"MATCH (u:User {userName:$userName}) SET u.updated_at=datetime($updatedAt), u+=$fields",
+				"MATCH (u:User {userName:$userName}) SET u.updated_at=datetime($updatedAt), (CASE WHEN u.bio = null THEN u END).bio = $fields.bio, u+=$fields",
 				map[string]interface{}{
 					"userName":  userName,
 					"updatedAt": now.Format(time.RFC3339),
