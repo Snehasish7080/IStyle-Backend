@@ -217,6 +217,7 @@ type userDetail struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 	UserName  string `json:"userName"`
+	Bio       string `json:"bio"`
 }
 
 func (u *UserController) getUserDetail(c *fiber.Ctx) error {
