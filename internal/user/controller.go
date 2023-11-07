@@ -6,7 +6,9 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/zone/IStyle/pkg/otp"
+	"github.com/zone/IStyle/pkg/signedurl"
 )
 
 type UserController struct {
@@ -356,6 +358,30 @@ func (u *UserController) updateUserMobile(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(updateUserDetailResponse{
 		Message: message,
+		Success: true,
+	})
+}
+
+type getProfileUploadKeyResponse struct {
+	Url     string `json:"url"`
+	Message string `json:"message"`
+	Success bool   `json:"success"`
+}
+
+func (u *UserController) getProfileUploadKey(c *fiber.Ctx) error {
+	id := uuid.New()
+	url, err := signedurl.GetSignedUrl(id.String())
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(getProfileUploadKeyResponse{
+			Message: "something went wrong",
+			Success: false,
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(getProfileUploadKeyResponse{
+		Url:     url,
+		Message: "upload url",
 		Success: true,
 	})
 }

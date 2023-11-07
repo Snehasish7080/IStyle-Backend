@@ -19,6 +19,7 @@ func AddUserRoutes(app *fiber.App, middleware *middleware.AuthMiddleware, contro
 	// update Mobile
 	updateMobile := auth.Group("/update/mobile", middleware.VerifyOtpToken)
 	updateMobile.Post("/", controller.updateUserMobile)
+
 	// verify Mobile token
 	verifyMobile := auth.Group("/verify/mobile", middleware.VerifyOtpToken)
 	verifyMobile.Post("/", controller.verifyMobile)
@@ -26,6 +27,7 @@ func AddUserRoutes(app *fiber.App, middleware *middleware.AuthMiddleware, contro
 	// user
 	user := auth.Group("/user", middleware.VerifyUser)
 	user.Get("/", controller.getUserDetail)
+	user.Get("/picture/url", controller.getProfileUploadKey)
 	user.Post("/update", controller.updateUserDetail)
 
 }
