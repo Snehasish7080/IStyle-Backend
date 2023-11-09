@@ -362,10 +362,14 @@ func (u *UserController) updateUserMobile(c *fiber.Ctx) error {
 	})
 }
 
+type GetProfileUploadKeyData struct {
+	Url string `json:"url"`
+	Key string `json:"key"`
+}
 type getProfileUploadKeyResponse struct {
-	Url     string `json:"url"`
-	Message string `json:"message"`
-	Success bool   `json:"success"`
+	Data    GetProfileUploadKeyData `json:"data"`
+	Message string                  `json:"message"`
+	Success bool                    `json:"success"`
 }
 
 func (u *UserController) getProfileUploadKey(c *fiber.Ctx) error {
@@ -380,7 +384,10 @@ func (u *UserController) getProfileUploadKey(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(getProfileUploadKeyResponse{
-		Url:     url,
+		Data: GetProfileUploadKeyData{
+			Url: url,
+			Key: id.String(),
+		},
 		Message: "upload url",
 		Success: true,
 	})
