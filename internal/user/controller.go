@@ -216,10 +216,11 @@ type userDetailResponse struct {
 	Success bool       `json:"success"`
 }
 type userDetail struct {
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	UserName  string `json:"userName"`
-	Bio       string `json:"bio"`
+	FirstName  string `json:"firstName"`
+	LastName   string `json:"lastName"`
+	UserName   string `json:"userName"`
+	Bio        string `json:"bio"`
+	ProfilePic string `json:"profilePic"`
 }
 
 func (u *UserController) getUserDetail(c *fiber.Ctx) error {
@@ -250,10 +251,10 @@ func (u *UserController) getUserDetail(c *fiber.Ctx) error {
 }
 
 type updateUserDetailRequest struct {
-	Image     string `json:"image"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Bio       string `json:"bio"`
+	ProfilePic string `json:"profilePic"`
+	FirstName  string `json:"firstName"`
+	LastName   string `json:"lastName"`
+	Bio        string `json:"bio"`
 }
 type updateUserDetailResponse struct {
 	Message string `json:"message"`

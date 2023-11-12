@@ -239,7 +239,7 @@ func (u *UserStorage) getUser(userName string, ctx context.Context) (*models.Use
 	result, _ := session.ExecuteRead(ctx,
 		func(tx neo4j.ManagedTransaction) (interface{}, error) {
 			result, err := tx.Run(ctx,
-				"MATCH (u:User {userName:$userName}) RETURN u.firstName AS firstName, u.lastName AS lastName, u.userName AS userName, u.bio AS bio",
+				"MATCH (u:User {userName:$userName}) RETURN u.firstName AS firstName, u.lastName AS lastName, u.userName AS userName, u.bio AS bio, u.profilePic AS profilePic",
 				map[string]interface{}{
 					"userName": userName,
 				},
@@ -256,14 +256,19 @@ func (u *UserStorage) getUser(userName string, ctx context.Context) (*models.Use
 			lastName, _ := record.Get("lastName")
 			userName, _ := record.Get("userName")
 			bio, _ := record.Get("bio")
+			profilePic, _ := record.Get("profilePic")
 			if bio == nil {
 				bio = ""
 			}
+			if profilePic == nil {
+				bio = ""
+			}
 			return &models.User{
-				FirstName: firstName.(string),
-				LastName:  lastName.(string),
-				UserName:  userName.(string),
-				Bio:       bio.(string),
+				FirstName:  firstName.(string),
+				LastName:   lastName.(string),
+				UserName:   userName.(string),
+				Bio:        bio.(string),
+				ProfilePic: profilePic.(string),
 			}, nil
 		})
 
@@ -316,7 +321,7 @@ func (u *UserStorage) updateUser(userName string, userField map[string]interface
 	_, err := session.ExecuteWrite(ctx,
 		func(tx neo4j.ManagedTransaction) (any, error) {
 			return tx.Run(ctx,
-				"MATCH (u:User {userName:$userName}) SET u.updated_at=datetime($updatedAt), (CASE WHEN u.bio = null THEN u END).bio = $fields.bio, u+=$fields",
+				"MATCH (u:User {userName:$userName}) SET u.updated_at=datetime($updatedAt), (CASE WHEN u.bio = null THEN u END).bio = $fields.bio, (CASE WHEN u.profilePic = null THEN u END).profilePic = $fields.profilePic, u+=$fields",
 				map[string]interface{}{
 					"userName":  userName,
 					"updatedAt": now.Format(time.RFC3339),
