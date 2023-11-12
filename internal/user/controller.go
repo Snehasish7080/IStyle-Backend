@@ -240,10 +240,11 @@ func (u *UserController) getUserDetail(c *fiber.Ctx) error {
 	}
 	return c.Status(fiber.StatusOK).JSON(userDetailResponse{
 		Data: userDetail{
-			FirstName: user.FirstName,
-			LastName:  user.LastName,
-			UserName:  user.UserName,
-			Bio:       user.Bio,
+			FirstName:  user.FirstName,
+			LastName:   user.LastName,
+			UserName:   user.UserName,
+			Bio:        user.Bio,
+			ProfilePic: user.ProfilePic,
 		},
 		Message: "found successfully",
 		Success: true,
