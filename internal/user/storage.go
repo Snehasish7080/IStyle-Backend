@@ -261,7 +261,7 @@ func (u *UserStorage) getUser(userName string, ctx context.Context) (*models.Use
 				bio = ""
 			}
 			if profilePic == nil {
-				bio = ""
+				profilePic = ""
 			}
 			return &models.User{
 				FirstName:  firstName.(string),
