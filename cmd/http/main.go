@@ -11,6 +11,7 @@ import (
 	"github.com/zone/IStyle/config"
 	"github.com/zone/IStyle/internal/middleware"
 	"github.com/zone/IStyle/internal/storage"
+	"github.com/zone/IStyle/internal/tag"
 	"github.com/zone/IStyle/internal/user"
 	"github.com/zone/IStyle/pkg/shutdown"
 )
@@ -83,6 +84,11 @@ func buildServer(env config.EnvVars) (*fiber.App, func(), error) {
 	userStore := user.NewUserStorage(db, env.NEO4jDB_NAME)
 	userController := user.NewUserController(userStore)
 	user.AddUserRoutes(app, appMiddleware, userController)
+
+	// tag domain * TODO (Relocate to separate server)
+	tagStore := tag.NewTagStorage(db, env.NEO4jDB_NAME)
+	tagController := tag.NewTagController(tagStore)
+	tag.AddTagRoutes(app, appMiddleware, tagController)
 
 	return app, func() {
 		storage.CloseNeo4j(db)
