@@ -49,7 +49,7 @@ func (t *TagStorage) create(name string, ctx context.Context) (string, error) {
 
 }
 
-func (t *TagStorage) getAll(ctx context.Context) ([]*models.Tag, error) {
+func (t *TagStorage) getAll(ctx context.Context) ([]models.Tag, error) {
 	session := t.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: t.dbName, AccessMode: neo4j.AccessModeWrite})
 	defer session.Close(ctx)
 
@@ -76,15 +76,15 @@ func (t *TagStorage) getAll(ctx context.Context) ([]*models.Tag, error) {
 		return nil, err
 	}
 
-	var arr []*models.Tag
+	var arr []models.Tag
 
 	for _, tag := range tags.([]*neo4j.Record) {
-		jsonData, _ := json.Marshal(tag.AsMap()["Tag"])
+		jsonData, _ := json.Marshal(tag.AsMap())
 
 		var structData models.Tag
 		json.Unmarshal(jsonData, &structData)
 
-		arr = append(arr, &models.Tag{
+		arr = append(arr, models.Tag{
 			ID:   structData.Uuid,
 			Name: structData.Name,
 		})

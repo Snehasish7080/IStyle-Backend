@@ -68,7 +68,7 @@ type tag struct {
 }
 
 type getAllTagResponse struct {
-	Data    []*tag `json:"data"`
+	Data    []tag  `json:"data"`
 	Message string `json:"message"`
 	Success bool   `json:"success"`
 }
@@ -86,7 +86,7 @@ func (t *TagController) getAllTags(c *fiber.Ctx) error {
 	}
 
 	jsonData, _ := json.Marshal(result)
-	var structData []*tag
+	var structData []tag
 	json.Unmarshal(jsonData, &structData)
 
 	return c.Status(fiber.StatusOK).JSON(getAllTagResponse{
