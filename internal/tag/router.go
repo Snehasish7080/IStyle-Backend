@@ -6,11 +6,11 @@ import (
 )
 
 func AddTagRoutes(app *fiber.App, middleware *middleware.AuthMiddleware, controller *TagController) {
-	auth := app.Group("/auth/tag")
+	tag := app.Group("/auth/tag")
 
 	// add routes here
 
-	auth.Post("/create", controller.createTag)
-	auth.Get("/all", controller.getAllTags)
+	tag.Post("/create", controller.createTag)
+	tag.Get("/all", controller.getAllTags)
 
 }
