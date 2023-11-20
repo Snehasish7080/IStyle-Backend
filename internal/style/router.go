@@ -10,5 +10,6 @@ func AddStyleRoutes(app *fiber.App, middleware *middleware.AuthMiddleware, contr
 
 	style := auth.Group("/style", middleware.VerifyUser)
 	style.Post("/upload-url", controller.getStyleUploadUrl)
+	style.Post("/create", controller.createStyle)
 
 }

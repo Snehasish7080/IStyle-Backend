@@ -2,6 +2,7 @@ package style
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -33,46 +34,37 @@ type GetStyleUploadUrlData struct {
 }
 
 type getStyleUploadUrlResponse struct {
-	Data    GetStyleUploadUrlData `json:"data"`
-	Message string                `json:"message"`
-	Success bool                  `json:"success"`
+	Data    *GetStyleUploadUrlData `json:"data"`
+	Message string                 `json:"message"`
+	Success bool                   `json:"success"`
 }
 
 type getStyleUploadUrlRequest struct {
 	LinkCount int `json:"linkCount" validate:"required"`
 }
 
-func getLinks(ch chan<- GetStyleUploadUrl, wg *sync.WaitGroup) error {
+func getLinks(ch chan<- GetStyleUploadUrl, wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
 	id := uuid.New()
-	linkUrl, err := signedurl.GetSignedUrl(id.String())
-
-	if err != nil {
-		return err
-	}
+	linkUrl, _ := signedurl.GetSignedUrl(id.String())
 
 	ch <- GetStyleUploadUrl{
 		Url: linkUrl,
 		Key: id.String(),
 	}
 
-	return nil
 }
 
 func (t *StyleController) getStyleUploadUrl(c *fiber.Ctx) error {
 
 	var req getStyleUploadUrlRequest
-
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(getStyleUploadUrlResponse{
-			Message: "Invalid request body",
-			Success: false,
-		})
-	}
+	c.BodyParser(&req)
 
 	err := validate.Struct(req)
+
+	fmt.Println(err)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(getStyleUploadUrlResponse{
 			Message: "Invalid request body",
@@ -118,14 +110,57 @@ func (t *StyleController) getStyleUploadUrl(c *fiber.Ctx) error {
 	}
 
 	jsonData, _ := json.Marshal(result)
-	var structData GetStyleUploadUrlData
+	var structData *GetStyleUploadUrlData
 	json.Unmarshal(jsonData, &structData)
-
-	fmt.Println("running .. this")
 
 	return c.Status(fiber.StatusOK).JSON(getStyleUploadUrlResponse{
 		Data:    structData,
 		Message: "url created successfully",
+		Success: true,
+	})
+}
+
+type createStyleRequest struct {
+	Image string   `json:"image"`
+	Links []link   `json:"links"`
+	Tags  []string `json:"tags"`
+}
+type createStyleResponse struct {
+	Message string `json:"message"`
+	Success bool   `json:"success"`
+}
+
+func (s *StyleController) createStyle(c *fiber.Ctx) error {
+	var req createStyleRequest
+	c.BodyParser(&req)
+
+	err := validate.Struct(req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(createStyleResponse{
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	localData := c.Locals("userName")
+	userName, cnvErr := localData.(string)
+
+	if !cnvErr {
+		return errors.New("not able to covert")
+	}
+
+	message, err := s.storage.create(userName, req.Image, req.Links, req.Tags, c.Context())
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(createStyleResponse{
+			Message: "something went wrong",
+			Success: false,
+		})
+
+	}
+
+	return c.Status(fiber.StatusBadRequest).JSON(createStyleResponse{
+		Message: message,
 		Success: true,
 	})
 }
