@@ -3,7 +3,6 @@ package style
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/go-playground/validator/v10"
@@ -40,7 +39,7 @@ type getStyleUploadUrlResponse struct {
 }
 
 type getStyleUploadUrlRequest struct {
-	LinkCount int `json:"linkCount" validate:"required"`
+	LinkCount int `json:"linkCount"`
 }
 
 func getLinks(ch chan<- GetStyleUploadUrl, wg *sync.WaitGroup) {
@@ -64,7 +63,6 @@ func (t *StyleController) getStyleUploadUrl(c *fiber.Ctx) error {
 
 	err := validate.Struct(req)
 
-	fmt.Println(err)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(getStyleUploadUrlResponse{
 			Message: "Invalid request body",
