@@ -162,3 +162,89 @@ func (s *StyleController) createStyle(c *fiber.Ctx) error {
 		Success: true,
 	})
 }
+
+type markTrendRequest struct {
+	Id string `json:"id"`
+}
+type markTrendResponse struct {
+	Message string `json:"message"`
+	Success bool   `json:"success"`
+}
+
+func (s *StyleController) markTrend(c *fiber.Ctx) error {
+	var req markTrendRequest
+	c.BodyParser(&req)
+
+	err := validate.Struct(req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(markTrendResponse{
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	localData := c.Locals("userName")
+	userName, cnvErr := localData.(string)
+
+	if !cnvErr {
+		return errors.New("not able to covert")
+	}
+
+	message, err := s.storage.trend(userName, req.Id, c.Context())
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(markTrendResponse{
+			Message: "something went wrong",
+			Success: false,
+		})
+
+	}
+
+	return c.Status(fiber.StatusBadRequest).JSON(markTrendResponse{
+		Message: message,
+		Success: true,
+	})
+}
+
+type styleClickedRequest struct {
+	Id string `json:"id"`
+}
+type styleClickedResponse struct {
+	Message string `json:"message"`
+	Success bool   `json:"success"`
+}
+
+func (s *StyleController) styleClicked(c *fiber.Ctx) error {
+	var req styleClickedRequest
+	c.BodyParser(&req)
+
+	err := validate.Struct(req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(styleClickedResponse{
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	localData := c.Locals("userName")
+	userName, cnvErr := localData.(string)
+
+	if !cnvErr {
+		return errors.New("not able to covert")
+	}
+
+	message, err := s.storage.clicked(userName, req.Id, c.Context())
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(styleClickedResponse{
+			Message: "something went wrong",
+			Success: false,
+		})
+
+	}
+
+	return c.Status(fiber.StatusBadRequest).JSON(styleClickedResponse{
+		Message: message,
+		Success: true,
+	})
+}
