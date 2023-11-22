@@ -1,5 +1,10 @@
 package models
 
+type Link struct {
+	Url   string `json:"url"`
+	Image string `json:"image"`
+}
+
 type Style struct {
 	Uuid       string `json:"uuid"`
 	Image      string `json:"image"`

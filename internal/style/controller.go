@@ -3,7 +3,6 @@ package style
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/go-playground/validator/v10"
@@ -119,6 +118,11 @@ func (t *StyleController) getStyleUploadUrl(c *fiber.Ctx) error {
 	})
 }
 
+type link struct {
+	Url   string `json:"url"`
+	Image string `json:"image"`
+}
+
 type createStyleRequest struct {
 	Image string   `json:"image"`
 	Links []link   `json:"links"`
@@ -148,9 +152,12 @@ func (s *StyleController) createStyle(c *fiber.Ctx) error {
 		return errors.New("not able to covert")
 	}
 
-	message, err := s.storage.create(userName, req.Image, req.Links, req.Tags, c.Context())
+	var links []map[string]interface{}
+	data, _ := json.Marshal(req.Links)
+	json.Unmarshal(data, &links)
 
-	fmt.Println(err)
+	message, err := s.storage.create(userName, req.Image, links, req.Tags, c.Context())
+
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(createStyleResponse{
 			Message: "something went wrong",
