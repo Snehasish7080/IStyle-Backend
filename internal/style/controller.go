@@ -3,6 +3,7 @@ package style
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/go-playground/validator/v10"
@@ -149,6 +150,7 @@ func (s *StyleController) createStyle(c *fiber.Ctx) error {
 
 	message, err := s.storage.create(userName, req.Image, req.Links, req.Tags, c.Context())
 
+	fmt.Println(err)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(createStyleResponse{
 			Message: "something went wrong",

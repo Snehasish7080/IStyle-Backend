@@ -20,8 +20,8 @@ func NewStyleStorage(db neo4j.DriverWithContext, dbName string) *StyleStorage {
 }
 
 type link struct {
-	Image string `json:"image"`
 	Url   string `json:"url"`
+	Image string `json:"image"`
 }
 
 func (s *StyleStorage) create(userName string, image string, links []link, tags []string, ctx context.Context) (string, error) {
@@ -35,11 +35,14 @@ func (s *StyleStorage) create(userName string, image string, links []link, tags 
 				`
 				UNWIND $tags AS tag
 				MATCH (t:TAG {uuid:tag})
+				UNWIND $links AS link
+				CREATE (l:Link {image:link.image, url:link.url, uuid:randomUUID(), created_at:datetime($createdAt), updated_at:datetime($updatedAt)})
 				MATCH (u:User {userName:$userName})
 				CREATE (s:Style {image: $image, links: $links, uuid:randomUUID(), created_at:datetime($createdAt), updated_at:datetime($updatedAt)})-[:CREATED_BY]->(u)
 				CREATE (s)-[:TAG_TO]->(t)
+				CREATE (s)-[:LINKED_TO]->(l)
 				`,
-				map[string]interface{}{
+				map[string]any{
 					"userName":  userName,
 					"image":     image,
 					"links":     links,
