@@ -28,12 +28,15 @@ func (s *StyleStorage) create(userName string, image string, links []map[string]
 		func(tx neo4j.ManagedTransaction) (any, error) {
 			return tx.Run(ctx,
 				`
-				UNWIND $tags AS tag
-				MATCH (t:TAG {uuid:tag})
+				UNWIND $tags AS tagId
+				MATCH (t:Tag {uuid:tagId})
+        UNWIND $links AS link
+        CREATE (l:Link {image:$link.image, url:$link.url, uuid:randomUUID(), created_at:datetime($createdAt), updated_at:datetime($updatedAt)})
 				MATCH (u:User {userName:$userName})
-				CREATE (s:Style {image: $image, links: $links, uuid:randomUUID(), created_at:datetime($createdAt), updated_at:datetime($updatedAt)})-[:CREATED_BY]->(u)
+				CREATE (s:Style {image:$image, links:$links, uuid:randomUUID(), created_at:datetime($createdAt), updated_at:datetime($updatedAt)})
 				CREATE (s)-[:TAG_TO]->(t)
 				CREATE (s)-[:LINKED_TO]->(l)
+        CREATE (s)-[:CREATED_BY]->(u)
 				`,
 				map[string]interface{}{
 					"userName":  userName,
@@ -44,7 +47,6 @@ func (s *StyleStorage) create(userName string, image string, links []map[string]
 					"updatedAt": now.Format(time.RFC3339),
 				})
 		})
-
 	if err != nil {
 		return "", err
 	}
@@ -69,7 +71,6 @@ func (s *StyleStorage) trend(userName string, id string, ctx context.Context) (s
 					"uuid":     id,
 				})
 		})
-
 	if err != nil {
 		return "", err
 	}
@@ -94,7 +95,6 @@ func (s *StyleStorage) clicked(userName string, id string, ctx context.Context) 
 					"uuid":     id,
 				})
 		})
-
 	if err != nil {
 		return "", err
 	}

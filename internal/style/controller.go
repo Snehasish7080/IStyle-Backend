@@ -3,6 +3,7 @@ package style
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/go-playground/validator/v10"
@@ -43,7 +44,6 @@ type getStyleUploadUrlRequest struct {
 }
 
 func getLinks(ch chan<- GetStyleUploadUrl, wg *sync.WaitGroup) {
-
 	defer wg.Done()
 
 	id := uuid.New()
@@ -53,16 +53,13 @@ func getLinks(ch chan<- GetStyleUploadUrl, wg *sync.WaitGroup) {
 		Url: linkUrl,
 		Key: id.String(),
 	}
-
 }
 
 func (t *StyleController) getStyleUploadUrl(c *fiber.Ctx) error {
-
 	var req getStyleUploadUrlRequest
 	c.BodyParser(&req)
 
 	err := validate.Struct(req)
-
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(getStyleUploadUrlResponse{
 			Message: "Invalid request body",
@@ -96,10 +93,9 @@ func (t *StyleController) getStyleUploadUrl(c *fiber.Ctx) error {
 
 	for link := range ch {
 		links = append(links, link)
-
 	}
 
-	var result = GetStyleUploadUrlData{
+	result := GetStyleUploadUrlData{
 		Style: GetStyleUploadUrl{
 			Url: mainStyleUrl,
 			Key: id.String(),
@@ -158,15 +154,15 @@ func (s *StyleController) createStyle(c *fiber.Ctx) error {
 
 	message, err := s.storage.create(userName, req.Image, links, req.Tags, c.Context())
 
+	fmt.Println("err", err)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(createStyleResponse{
 			Message: "something went wrong",
 			Success: false,
 		})
-
 	}
 
-	return c.Status(fiber.StatusBadRequest).JSON(createStyleResponse{
+	return c.Status(fiber.StatusOK).JSON(createStyleResponse{
 		Message: message,
 		Success: true,
 	})
@@ -200,13 +196,11 @@ func (s *StyleController) markTrend(c *fiber.Ctx) error {
 	}
 
 	message, err := s.storage.trend(userName, req.Id, c.Context())
-
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(markTrendResponse{
 			Message: "something went wrong",
 			Success: false,
 		})
-
 	}
 
 	return c.Status(fiber.StatusBadRequest).JSON(markTrendResponse{
@@ -243,13 +237,11 @@ func (s *StyleController) styleClicked(c *fiber.Ctx) error {
 	}
 
 	message, err := s.storage.clicked(userName, req.Id, c.Context())
-
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(styleClickedResponse{
 			Message: "something went wrong",
 			Success: false,
 		})
-
 	}
 
 	return c.Status(fiber.StatusBadRequest).JSON(styleClickedResponse{
