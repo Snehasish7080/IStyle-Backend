@@ -3,7 +3,6 @@ package style
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/go-playground/validator/v10"
@@ -153,8 +152,6 @@ func (s *StyleController) createStyle(c *fiber.Ctx) error {
 	json.Unmarshal(data, &links)
 
 	message, err := s.storage.create(userName, req.Image, links, req.Tags, c.Context())
-
-	fmt.Println("err", err)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(createStyleResponse{
 			Message: "something went wrong",
@@ -164,6 +161,44 @@ func (s *StyleController) createStyle(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(createStyleResponse{
 		Message: message,
+		Success: true,
+	})
+}
+
+type style struct {
+	ID    string `json:"id"`
+	Image string `json:"image"`
+}
+
+type getAllStyleResponse struct {
+	Data    []style `json:"data"`
+	Message string  `json:"message"`
+	Success bool    `json:"success"`
+}
+
+func (s *StyleController) getAllUserStyles(c *fiber.Ctx) error {
+	localData := c.Locals("userName")
+	userName, cnvErr := localData.(string)
+
+	if !cnvErr {
+		return errors.New("not able to covert")
+	}
+
+	result, err := s.storage.getALLStyles(userName, c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(getAllStyleResponse{
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+
+	jsonData, _ := json.Marshal(result)
+	var structData []style
+	json.Unmarshal(jsonData, &structData)
+
+	return c.Status(fiber.StatusOK).JSON(getAllStyleResponse{
+		Data:    structData,
+		Message: "found successfully",
 		Success: true,
 	})
 }

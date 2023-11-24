@@ -2,9 +2,12 @@ package style
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/zone/IStyle/internal/models"
 )
 
 type StyleStorage struct {
@@ -28,15 +31,20 @@ func (s *StyleStorage) create(userName string, image string, links []map[string]
 		func(tx neo4j.ManagedTransaction) (any, error) {
 			return tx.Run(ctx,
 				`
+	      MATCH (u:User {userName:$userName})
+        CREATE (s:Style {image:$image, uuid:randomUUID(), created_at:datetime($createdAt), updated_at:datetime($updatedAt)})
+        CREATE (s)-[:CREATED_BY]->(u)
+        WITH s
+        CALL{
+          UNWIND $links AS link
+          CREATE (l:Link {image:link.image, url:link.url, uuid:randomUUID(), created_at:datetime($createdAt), updated_at:datetime($updatedAt)})
+          RETURN l
+        }
+        CREATE (s)-[:LINKED_TO]->(l)
+        WITH s
 				UNWIND $tags AS tagId
 				MATCH (t:Tag {uuid:tagId})
-        UNWIND $links AS link
-        CREATE (l:Link {image:$link.image, url:$link.url, uuid:randomUUID(), created_at:datetime($createdAt), updated_at:datetime($updatedAt)})
-				MATCH (u:User {userName:$userName})
-				CREATE (s:Style {image:$image, links:$links, uuid:randomUUID(), created_at:datetime($createdAt), updated_at:datetime($updatedAt)})
-				CREATE (s)-[:TAG_TO]->(t)
-				CREATE (s)-[:LINKED_TO]->(l)
-        CREATE (s)-[:CREATED_BY]->(u)
+				MERGE (s)-[:TAG_TO]->(t)
 				`,
 				map[string]interface{}{
 					"userName":  userName,
@@ -52,6 +60,55 @@ func (s *StyleStorage) create(userName string, image string, links []map[string]
 	}
 
 	return "created successfully", nil
+}
+
+func (s *StyleStorage) getALLStyles(userName string, ctx context.Context) ([]models.Style, error) {
+	session := s.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: s.dbName, AccessMode: neo4j.AccessModeWrite})
+	defer session.Close(ctx)
+
+	styles, err := session.ExecuteRead(ctx,
+		func(tx neo4j.ManagedTransaction) (any, error) {
+			result, err := tx.Run(ctx,
+				`
+      MATCH(u:User{userName:$userName})
+      MATCH(s:Style) WHERE (s)-[:CREATED_BY]->(u) 
+      RETURN s.uuid, s.image
+      `,
+				map[string]interface{}{
+					"userName": userName,
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			record, err := result.Collect(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			return record, nil
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	var arr []models.Style
+	for _, style := range styles.([]*neo4j.Record) {
+		jsonData, _ := json.Marshal(style.AsMap())
+
+		var structData models.Style
+		json.Unmarshal(jsonData, &structData)
+
+		fmt.Println(structData)
+
+		arr = append(arr, models.Style{
+			ID:    structData.Uuid,
+			Image: structData.Image,
+		})
+	}
+
+	return arr, nil
 }
 
 func (s *StyleStorage) trend(userName string, id string, ctx context.Context) (string, error) {
