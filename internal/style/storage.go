@@ -3,7 +3,6 @@ package style
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -72,7 +71,7 @@ func (s *StyleStorage) getALLStyles(userName string, ctx context.Context) ([]mod
 				`
       MATCH(u:User{userName:$userName})
       MATCH(s:Style) WHERE (s)-[:CREATED_BY]->(u) 
-      RETURN s.uuid, s.image
+      RETURN s.uuid AS uuid, s.image As image
       `,
 				map[string]interface{}{
 					"userName": userName,
@@ -99,8 +98,6 @@ func (s *StyleStorage) getALLStyles(userName string, ctx context.Context) ([]mod
 
 		var structData models.Style
 		json.Unmarshal(jsonData, &structData)
-
-		fmt.Println(structData)
 
 		arr = append(arr, models.Style{
 			ID:    structData.Uuid,
