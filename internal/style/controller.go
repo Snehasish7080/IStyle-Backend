@@ -177,6 +177,8 @@ type getAllStyleResponse struct {
 }
 
 func (s *StyleController) getAllUserStyles(c *fiber.Ctx) error {
+	cursor := c.Query("cursor")
+
 	localData := c.Locals("userName")
 	userName, cnvErr := localData.(string)
 
@@ -184,7 +186,7 @@ func (s *StyleController) getAllUserStyles(c *fiber.Ctx) error {
 		return errors.New("not able to covert")
 	}
 
-	result, err := s.storage.getALLStyles(userName, c.Context())
+	result, err := s.storage.getALLStyles(userName, cursor, c.Context())
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(getAllStyleResponse{
 			Message: err.Error(),

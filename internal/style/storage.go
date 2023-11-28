@@ -61,7 +61,7 @@ func (s *StyleStorage) create(userName string, image string, links []map[string]
 	return "created successfully", nil
 }
 
-func (s *StyleStorage) getALLStyles(userName string, ctx context.Context) ([]models.Style, error) {
+func (s *StyleStorage) getALLStyles(userName string, cursor string, ctx context.Context) ([]models.Style, error) {
 	session := s.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: s.dbName, AccessMode: neo4j.AccessModeWrite})
 	defer session.Close(ctx)
 
@@ -70,11 +70,15 @@ func (s *StyleStorage) getALLStyles(userName string, ctx context.Context) ([]mod
 			result, err := tx.Run(ctx,
 				`
       MATCH(u:User{userName:$userName})
-      MATCH(s:Style) WHERE (s)-[:CREATED_BY]->(u) 
+      MATCH(s:Style) 
+      WHERE (s)-[:CREATED_BY]->(u) AND s.uuid>$cursor
       RETURN s.uuid AS uuid, s.image As image
+      ORDER BY s.uuid
+      LIMIT 30
       `,
 				map[string]interface{}{
 					"userName": userName,
+					"cursor":   cursor,
 				},
 			)
 			if err != nil {
