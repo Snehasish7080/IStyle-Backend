@@ -2,9 +2,8 @@ package user
 
 import (
 	"context"
-	"time"
-
 	"errors"
+	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"github.com/zone/IStyle/internal/models"
@@ -26,7 +25,6 @@ func NewUserStorage(db neo4j.DriverWithContext, dbName string) *UserStorage {
 }
 
 func (u *UserStorage) signUp(firstName string, lastName string, userName string, email string, password string, ctx context.Context) (string, error) {
-
 	now := time.Now()
 	isEmailExist := u.emailExists(email, ctx)
 
@@ -40,7 +38,6 @@ func (u *UserStorage) signUp(firstName string, lastName string, userName string,
 	}
 
 	hashedPassword, err := hash.HashPassword(password)
-
 	if err != nil {
 		return "", err
 	}
@@ -61,13 +58,11 @@ func (u *UserStorage) signUp(firstName string, lastName string, userName string,
 	}
 
 	verifyToken, err := jwtclaim.CreateJwtToken(userName, false)
-
 	if err != nil {
 		return "", err
 	}
 
 	return verifyToken, nil
-
 }
 
 func (u *UserStorage) verifyEmail(otp string, userName string, ctx context.Context) (string, error) {
@@ -95,7 +90,6 @@ func (u *UserStorage) verifyEmail(otp string, userName string, ctx context.Conte
 
 			return otp.(string), nil
 		})
-
 	if err != nil {
 		return "", err
 	}
@@ -148,9 +142,7 @@ func (u *UserStorage) verifyMobile(otp string, userName string, ctx context.Cont
 			otp, _ := record.Get("otp")
 
 			return otp.(string), nil
-
 		})
-
 	if err != nil {
 		return "", err
 	}
@@ -279,7 +271,6 @@ func (u *UserStorage) getUser(userName string, ctx context.Context) (*models.Use
 	}
 
 	return user, nil
-
 }
 
 func (u *UserStorage) updateMobile(userName string, mobile string, otp string, ctx context.Context) (string, error) {
@@ -306,13 +297,13 @@ func (u *UserStorage) updateMobile(userName string, mobile string, otp string, c
 			)
 		},
 	)
-
 	if err != nil {
 		return "", err
 	}
 
 	return "Update Successfully", nil
 }
+
 func (u *UserStorage) updateUser(userName string, userField map[string]interface{}, ctx context.Context) (string, error) {
 	session := u.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: u.dbName, AccessMode: neo4j.AccessModeWrite})
 	defer session.Close(ctx)
@@ -330,7 +321,6 @@ func (u *UserStorage) updateUser(userName string, userField map[string]interface
 			)
 		},
 	)
-
 	if err != nil {
 		return "", err
 	}
@@ -362,7 +352,6 @@ func (u *UserStorage) mobileExists(mobile string, ctx context.Context) bool {
 		})
 
 	return result != nil
-
 }
 
 func (u *UserStorage) emailExists(email string, ctx context.Context) bool {
@@ -389,7 +378,6 @@ func (u *UserStorage) emailExists(email string, ctx context.Context) bool {
 		})
 
 	return result != nil
-
 }
 
 func (u *UserStorage) userNameExists(userName string, ctx context.Context) bool {
@@ -416,5 +404,58 @@ func (u *UserStorage) userNameExists(userName string, ctx context.Context) bool 
 		})
 
 	return result != nil
+}
 
+func (u *UserStorage) getUserByUserName(userName string, ctx context.Context) (*models.User, error) {
+	isUserNameExist := u.userNameExists(userName, ctx)
+
+	if !isUserNameExist {
+		return nil, errors.New("user does not exists")
+	}
+	session := u.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: u.dbName, AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	result, _ := session.ExecuteRead(ctx,
+		func(tx neo4j.ManagedTransaction) (interface{}, error) {
+			result, err := tx.Run(ctx,
+				"MATCH (u:User {userName:$userName}) RETURN u.firstName AS firstName, u.lastName AS lastName, u.userName AS userName, u.bio AS bio, u.profilePic AS profilePic",
+				map[string]interface{}{
+					"userName": userName,
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			record, err := result.Single(ctx)
+			if err != nil {
+				return nil, err
+			}
+			firstName, _ := record.Get("firstName")
+			lastName, _ := record.Get("lastName")
+			userName, _ := record.Get("userName")
+			bio, _ := record.Get("bio")
+			profilePic, _ := record.Get("profilePic")
+			if bio == nil {
+				bio = ""
+			}
+			if profilePic == nil {
+				profilePic = ""
+			}
+			return &models.User{
+				FirstName:  firstName.(string),
+				LastName:   lastName.(string),
+				UserName:   userName.(string),
+				Bio:        bio.(string),
+				ProfilePic: profilePic.(string),
+			}, nil
+		})
+
+	user, err := result.(*models.User)
+
+	if !err {
+		return nil, errors.New("not able to convert")
+	}
+
+	return user, nil
 }

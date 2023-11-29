@@ -29,5 +29,5 @@ func AddUserRoutes(app *fiber.App, middleware *middleware.AuthMiddleware, contro
 	user.Get("/", controller.getUserDetail)
 	user.Get("/picture/url", controller.getProfileUploadKey)
 	user.Post("/update", controller.updateUserDetail)
-
+	user.Get("/:userName", controller.getUserDetailByUserName)
 }

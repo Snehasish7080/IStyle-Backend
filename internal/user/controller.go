@@ -57,7 +57,6 @@ func (u *UserController) register(c *fiber.Ctx) error {
 	}
 
 	token, err := u.storage.signUp(req.FirstName, req.LastName, req.UserName, req.Email, req.Password, c.Context())
-
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(signUpResponse{
 			Message: err.Error(),
@@ -82,7 +81,6 @@ type verifyResponse struct {
 }
 
 func (u *UserController) verifyEmail(c *fiber.Ctx) error {
-
 	var req verifyRequest
 
 	if err := c.BodyParser(&req); err != nil {
@@ -108,7 +106,6 @@ func (u *UserController) verifyEmail(c *fiber.Ctx) error {
 	}
 
 	token, err := u.storage.verifyEmail(req.Otp, userName, c.Context())
-
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(verifyResponse{
 			Message: err.Error(),
@@ -121,11 +118,9 @@ func (u *UserController) verifyEmail(c *fiber.Ctx) error {
 		Success: true,
 		Message: "Verified",
 	})
-
 }
 
 func (u *UserController) verifyMobile(c *fiber.Ctx) error {
-
 	var req verifyRequest
 
 	if err := c.BodyParser(&req); err != nil {
@@ -151,7 +146,6 @@ func (u *UserController) verifyMobile(c *fiber.Ctx) error {
 	}
 
 	token, err := u.storage.verifyMobile(req.Otp, userName, c.Context())
-
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(verifyResponse{
 			Message: err.Error(),
@@ -164,7 +158,6 @@ func (u *UserController) verifyMobile(c *fiber.Ctx) error {
 		Success: true,
 		Message: "Verified",
 	})
-
 }
 
 type loginRequest struct {
@@ -196,7 +189,6 @@ func (u *UserController) loginUser(c *fiber.Ctx) error {
 	}
 
 	token, err := u.storage.login(req.Email, req.Password, c.Context())
-
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(loginResponse{
 			Message: err.Error(),
@@ -231,7 +223,6 @@ func (u *UserController) getUserDetail(c *fiber.Ctx) error {
 		return errors.New("not able to covert")
 	}
 	user, err := u.storage.getUser(userName, c.Context())
-
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(userDetailResponse{
 			Message: err.Error(),
@@ -298,13 +289,11 @@ func (u *UserController) updateUserDetail(c *fiber.Ctx) error {
 	}
 
 	message, err := u.storage.updateUser(userName, updateFields, c.Context())
-
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(updateUserDetailResponse{
 			Message: "Update failed",
 			Success: false,
 		})
-
 	}
 
 	return c.Status(fiber.StatusOK).JSON(updateUserDetailResponse{
@@ -349,13 +338,11 @@ func (u *UserController) updateUserMobile(c *fiber.Ctx) error {
 	generatedOtp := otp.EncodeToString(6)
 
 	message, err := u.storage.updateMobile(userName, req.Mobile, generatedOtp, c.Context())
-
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(updateUserDetailResponse{
 			Message: "Update failed",
 			Success: false,
 		})
-
 	}
 
 	return c.Status(fiber.StatusOK).JSON(updateUserDetailResponse{
@@ -377,7 +364,6 @@ type getProfileUploadKeyResponse struct {
 func (u *UserController) getProfileUploadKey(c *fiber.Ctx) error {
 	id := uuid.New()
 	url, err := signedurl.GetSignedUrl(id.String())
-
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(getProfileUploadKeyResponse{
 			Message: "something went wrong",
@@ -391,6 +377,35 @@ func (u *UserController) getProfileUploadKey(c *fiber.Ctx) error {
 			Key: id.String(),
 		},
 		Message: "upload url",
+		Success: true,
+	})
+}
+
+func (u *UserController) getUserDetailByUserName(c *fiber.Ctx) error {
+	userName := c.Params("userName")
+
+	if userName == "" {
+		return c.Status(fiber.StatusInternalServerError).JSON(userDetailResponse{
+			Message: "invalid request",
+			Success: false,
+		})
+	}
+	user, err := u.storage.getUserByUserName(userName, c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(userDetailResponse{
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+	return c.Status(fiber.StatusOK).JSON(userDetailResponse{
+		Data: userDetail{
+			FirstName:  user.FirstName,
+			LastName:   user.LastName,
+			UserName:   user.UserName,
+			Bio:        user.Bio,
+			ProfilePic: user.ProfilePic,
+		},
+		Message: "found successfully",
 		Success: true,
 	})
 }
