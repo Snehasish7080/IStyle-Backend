@@ -208,11 +208,12 @@ type userDetailResponse struct {
 	Success bool       `json:"success"`
 }
 type userDetail struct {
-	FirstName  string `json:"firstName"`
-	LastName   string `json:"lastName"`
-	UserName   string `json:"userName"`
-	Bio        string `json:"bio"`
-	ProfilePic string `json:"profilePic"`
+	FirstName        string `json:"firstName"`
+	LastName         string `json:"lastName"`
+	UserName         string `json:"userName"`
+	Bio              string `json:"bio"`
+	ProfilePic       string `json:"profilePic"`
+	IsMobileVerified bool   `json:"isMobileVerified"`
 }
 
 func (u *UserController) getUserDetail(c *fiber.Ctx) error {
@@ -231,11 +232,12 @@ func (u *UserController) getUserDetail(c *fiber.Ctx) error {
 	}
 	return c.Status(fiber.StatusOK).JSON(userDetailResponse{
 		Data: userDetail{
-			FirstName:  user.FirstName,
-			LastName:   user.LastName,
-			UserName:   user.UserName,
-			Bio:        user.Bio,
-			ProfilePic: user.ProfilePic,
+			FirstName:        user.FirstName,
+			LastName:         user.LastName,
+			UserName:         user.UserName,
+			Bio:              user.Bio,
+			ProfilePic:       user.ProfilePic,
+			IsMobileVerified: user.IsMobileVerified,
 		},
 		Message: "found successfully",
 		Success: true,

@@ -231,7 +231,7 @@ func (u *UserStorage) getUser(userName string, ctx context.Context) (*models.Use
 	result, _ := session.ExecuteRead(ctx,
 		func(tx neo4j.ManagedTransaction) (interface{}, error) {
 			result, err := tx.Run(ctx,
-				"MATCH (u:User {userName:$userName}) RETURN u.firstName AS firstName, u.lastName AS lastName, u.userName AS userName, u.bio AS bio, u.profilePic AS profilePic",
+				"MATCH (u:User {userName:$userName}) RETURN u.firstName AS firstName, u.lastName AS lastName, u.userName AS userName, u.bio AS bio, u.profilePic AS profilePic, u.isMobileVerified AS isMobileVerified",
 				map[string]interface{}{
 					"userName": userName,
 				},
@@ -249,6 +249,7 @@ func (u *UserStorage) getUser(userName string, ctx context.Context) (*models.Use
 			userName, _ := record.Get("userName")
 			bio, _ := record.Get("bio")
 			profilePic, _ := record.Get("profilePic")
+			isMobileVerified, _ := record.Get("isMobileVerified")
 			if bio == nil {
 				bio = ""
 			}
@@ -256,11 +257,12 @@ func (u *UserStorage) getUser(userName string, ctx context.Context) (*models.Use
 				profilePic = ""
 			}
 			return &models.User{
-				FirstName:  firstName.(string),
-				LastName:   lastName.(string),
-				UserName:   userName.(string),
-				Bio:        bio.(string),
-				ProfilePic: profilePic.(string),
+				FirstName:        firstName.(string),
+				LastName:         lastName.(string),
+				UserName:         userName.(string),
+				Bio:              bio.(string),
+				ProfilePic:       profilePic.(string),
+				IsMobileVerified: isMobileVerified.(bool),
 			}, nil
 		})
 
