@@ -214,6 +214,7 @@ type userDetail struct {
 	Bio              string `json:"bio"`
 	ProfilePic       string `json:"profilePic"`
 	IsMobileVerified bool   `json:"isMobileVerified"`
+	IsComplete       bool   `json:"isComplete"`
 }
 
 func (u *UserController) getUserDetail(c *fiber.Ctx) error {
@@ -238,6 +239,7 @@ func (u *UserController) getUserDetail(c *fiber.Ctx) error {
 			Bio:              user.Bio,
 			ProfilePic:       user.ProfilePic,
 			IsMobileVerified: user.IsMobileVerified,
+			IsComplete:       user.IsComplete,
 		},
 		Message: "found successfully",
 		Success: true,
@@ -408,6 +410,50 @@ func (u *UserController) getUserDetailByUserName(c *fiber.Ctx) error {
 			ProfilePic: user.ProfilePic,
 		},
 		Message: "found successfully",
+		Success: true,
+	})
+}
+
+type markUserFavTagsRequest struct {
+	Tags []string `json:"tags"`
+}
+type markUserFavTagsResponse struct {
+	Message string `json:"message"`
+	Success bool   `json:"success"`
+}
+
+func (u *UserController) markUserFavTags(c *fiber.Ctx) error {
+	var req markUserFavTagsRequest
+	c.BodyParser(&req)
+
+	err := validate.Struct(req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(markUserFavTagsResponse{
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+
+	localData := c.Locals("userName")
+	userName, cnvErr := localData.(string)
+
+	if !cnvErr {
+		return c.Status(fiber.StatusInternalServerError).JSON(markUserFavTagsResponse{
+			Message: "something went wrong",
+			Success: false,
+		})
+	}
+
+	message, err := u.storage.markFavTags(userName, req.Tags, c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(markUserFavTagsResponse{
+			Message: "somthing went wrong",
+			Success: false,
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(markUserFavTagsResponse{
+		Message: message,
 		Success: true,
 	})
 }

@@ -231,7 +231,7 @@ func (u *UserStorage) getUser(userName string, ctx context.Context) (*models.Use
 	result, _ := session.ExecuteRead(ctx,
 		func(tx neo4j.ManagedTransaction) (interface{}, error) {
 			result, err := tx.Run(ctx,
-				"MATCH (u:User {userName:$userName}) RETURN u.firstName AS firstName, u.lastName AS lastName, u.userName AS userName, u.bio AS bio, u.profilePic AS profilePic, u.isMobileVerified AS isMobileVerified",
+				"MATCH (u:User {userName:$userName}) RETURN u.firstName AS firstName, u.lastName AS lastName, u.userName AS userName, u.bio AS bio, u.profilePic AS profilePic, u.isMobileVerified AS isMobileVerified, u.isComplete AS isComplete",
 				map[string]interface{}{
 					"userName": userName,
 				},
@@ -250,6 +250,7 @@ func (u *UserStorage) getUser(userName string, ctx context.Context) (*models.Use
 			bio, _ := record.Get("bio")
 			profilePic, _ := record.Get("profilePic")
 			isMobileVerified, _ := record.Get("isMobileVerified")
+			isComplete, _ := record.Get("isComplete")
 			if bio == nil {
 				bio = ""
 			}
@@ -263,6 +264,7 @@ func (u *UserStorage) getUser(userName string, ctx context.Context) (*models.Use
 				Bio:              bio.(string),
 				ProfilePic:       profilePic.(string),
 				IsMobileVerified: isMobileVerified.(bool),
+				IsComplete:       isComplete.(bool),
 			}, nil
 		})
 
@@ -460,4 +462,31 @@ func (u *UserStorage) getUserByUserName(userName string, ctx context.Context) (*
 	}
 
 	return user, nil
+}
+
+func (u *UserStorage) markFavTags(userName string, tags []string, ctx context.Context) (string, error) {
+	session := u.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: u.dbName, AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	_, err := session.ExecuteWrite(ctx,
+		func(tx neo4j.ManagedTransaction) (any, error) {
+			return tx.Run(ctx,
+				`MATCH (u:User {userName:$userName}) 
+         UNWIND $tags AS tagId
+         MATCH (t:Tag {uuid:tagId})
+         MERGE (u)-[:MARK_FAV]->(t)
+         SET u.isComplete=true
+        `,
+				map[string]interface{}{
+					"userName": userName,
+					"tags":     tags,
+				},
+			)
+		},
+	)
+	if err != nil {
+		return "something went wrong", err
+	}
+
+	return "marked successfully", nil
 }
