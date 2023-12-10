@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/zone/IStyle/config"
+	"github.com/zone/IStyle/internal/feed"
 	"github.com/zone/IStyle/internal/middleware"
 	"github.com/zone/IStyle/internal/storage"
 	"github.com/zone/IStyle/internal/style"
@@ -24,7 +25,6 @@ func main() {
 	}()
 
 	env, err := config.LoadConfig()
-
 	if err != nil {
 		fmt.Printf("error: %v", err)
 		exitCode = 1
@@ -42,7 +42,6 @@ func main() {
 
 	// ensure the server is shutdown gracefully & app runs
 	shutdown.Gracefully()
-
 }
 
 func run(env config.EnvVars) (func(), error) {
@@ -65,7 +64,6 @@ func run(env config.EnvVars) (func(), error) {
 
 func buildServer(env config.EnvVars) (*fiber.App, func(), error) {
 	db, err := storage.BootstrapNeo4j(env.NEO4j_URI, env.NEO4jDB_NAME, env.NEO4jDB_USER, env.NEO4jDB_Password, 10*time.Second)
-
 	if err != nil {
 		return nil, nil, err
 	}
@@ -95,6 +93,11 @@ func buildServer(env config.EnvVars) (*fiber.App, func(), error) {
 	tagStore := tag.NewTagStorage(db, env.NEO4jDB_NAME)
 	tagController := tag.NewTagController(tagStore)
 	tag.AddTagRoutes(app, appMiddleware, tagController)
+
+	// feed domain
+	feedStore := feed.NewFeedStorage(db, env.NEO4jDB_NAME)
+	feedController := feed.NewFeedController(feedStore)
+	feed.AddFeedRoutes(app, appMiddleware, feedController)
 
 	return app, func() {
 		storage.CloseNeo4j(db)
