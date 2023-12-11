@@ -19,21 +19,10 @@ func NewFeedController(storage *FeedStorage) *FeedController {
 
 var validate = validator.New()
 
-type style struct {
-	Id         string `json:"id"`
-	Image      string `json:"image"`
-	Links      []link `json:"links"`
-	Created_at string `json:"created_at"`
-}
-type link struct {
-	Id    string `json:"id"`
-	Image string `json:"image"`
-	Url   string `json:"url"`
-}
 type getUserFeedResponse struct {
-	Data    []style `json:"data"`
-	Message string  `json:"message"`
-	Success bool    `json:"success"`
+	Data    []feedStyle `json:"data"`
+	Message string      `json:"message"`
+	Success bool        `json:"success"`
 }
 
 func (f *FeedController) getUserFeed(c *fiber.Ctx) error {
@@ -55,7 +44,7 @@ func (f *FeedController) getUserFeed(c *fiber.Ctx) error {
 	}
 
 	jsonData, _ := json.Marshal(result)
-	var structData []style
+	var structData []feedStyle
 	json.Unmarshal(jsonData, &structData)
 
 	return c.Status(fiber.StatusOK).JSON(getUserFeedResponse{

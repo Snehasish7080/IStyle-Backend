@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
-	"github.com/zone/IStyle/internal/models"
 )
 
 type FeedStorage struct {
@@ -20,7 +19,26 @@ func NewFeedStorage(db neo4j.DriverWithContext, dbName string) *FeedStorage {
 	}
 }
 
-func (f *FeedStorage) feed(userName string, ctx context.Context) ([]models.Style, error) {
+type feedStyle struct {
+	Id         string `json:"id"`
+	Image      string `json:"image"`
+	Links      []link `json:"links"`
+	User       user   `json:"user"`
+	Created_at string `json:"created_at"`
+}
+
+type link struct {
+	Id    string `json:"id"`
+	Image string `json:"image"`
+	Url   string `json:"url"`
+}
+
+type user struct {
+	UserName   string `json:"userName"`
+	ProfilePic string `json:"profilePic"`
+}
+
+func (f *FeedStorage) feed(userName string, ctx context.Context) ([]feedStyle, error) {
 	session := f.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: f.dbName, AccessMode: neo4j.AccessModeWrite})
 	defer session.Close(ctx)
 
@@ -29,10 +47,11 @@ func (f *FeedStorage) feed(userName string, ctx context.Context) ([]models.Style
 			result, err := tx.Run(ctx,
 				`
       MATCH(u:User{userName:$userName})
+      MATCH(p:User)
       MATCH(s:Style) 
       MATCH(l:Link)
-      WHERE (s)-[:TAG_TO]->(:Tag)<-[:MARK_FAV]-(u) AND NOT (s)-[:CREATED_BY]->(u) AND (s)-[:LINKED_TO]->(l)
-      RETURN s.uuid AS uuid, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, s.created_at AS created_at ORDER BY s.created_at DESC
+      WHERE (s)-[:TAG_TO]->(:Tag)<-[:MARK_FAV]-(u) AND NOT (s)-[:CREATED_BY]->(u) AND (s)-[:LINKED_TO]->(l) AND (s)-[:CREATED_BY]->(p)
+      RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic} AS user, s.created_at AS created_at ORDER BY s.created_at DESC
       `,
 				map[string]interface{}{
 					"userName": userName,
@@ -53,25 +72,19 @@ func (f *FeedStorage) feed(userName string, ctx context.Context) ([]models.Style
 		return nil, err
 	}
 
-	var arr []models.Style
+	var arr []feedStyle
 	for _, style := range styles.([]*neo4j.Record) {
-		var links []models.Link
+
 		jsonData, _ := json.Marshal(style.AsMap())
 
-		var structData models.Style
+		var structData feedStyle
 		json.Unmarshal(jsonData, &structData)
 
-		for _, link := range structData.Links {
-			links = append(links, models.Link{
-				Id:    link.Uuid,
-				Image: link.Image,
-				Url:   link.Url,
-			})
-		}
-		arr = append(arr, models.Style{
-			ID:         structData.Uuid,
+		arr = append(arr, feedStyle{
+			Id:         structData.Id,
 			Image:      structData.Image,
-			Links:      links,
+			Links:      structData.Links,
+			User:       structData.User,
 			Created_at: structData.Created_at,
 		})
 	}
