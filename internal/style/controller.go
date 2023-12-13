@@ -205,6 +205,29 @@ func (s *StyleController) getAllUserStyles(c *fiber.Ctx) error {
 	})
 }
 
+func (s *StyleController) getAllStylesByUserName(c *fiber.Ctx) error {
+	cursor := c.Query("cursor")
+	userName := c.Params("userName")
+
+	result, err := s.storage.getALLStyles(userName, cursor, c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(getAllStyleResponse{
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+
+	jsonData, _ := json.Marshal(result)
+	var structData []style
+	json.Unmarshal(jsonData, &structData)
+
+	return c.Status(fiber.StatusOK).JSON(getAllStyleResponse{
+		Data:    structData,
+		Message: "found successfully",
+		Success: true,
+	})
+}
+
 type markTrendRequest struct {
 	Id string `json:"id"`
 }

@@ -16,7 +16,6 @@ func NewAuthMiddleware(storage *MiddlewareStorage) *AuthMiddleware {
 }
 
 func (a *AuthMiddleware) VerifyOtpToken(c *fiber.Ctx) error {
-
 	reqToken := c.Request().Header.Peek("Authorization")
 
 	userName, valid := jwtclaim.ExtractVerifyUsername(string(reqToken))
@@ -29,7 +28,6 @@ func (a *AuthMiddleware) VerifyOtpToken(c *fiber.Ctx) error {
 }
 
 func (a *AuthMiddleware) VerifyUser(c *fiber.Ctx) error {
-
 	reqToken := c.Request().Header.Peek("Authorization")
 
 	userName, valid := jwtclaim.ExtractVerifyUsername(string(reqToken))
@@ -38,5 +36,17 @@ func (a *AuthMiddleware) VerifyUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).SendString("unauthorized access")
 	}
 	c.Locals("userName", userName)
+	return c.Next()
+}
+
+func (a *AuthMiddleware) CheckUserNameExists(c *fiber.Ctx) error {
+	userName := c.Params("userName")
+
+	isValid := a.storage.userNameExists(userName, c.Context())
+
+	if !isValid {
+		return c.Status(fiber.StatusBadRequest).SendString("user does not exists")
+	}
+
 	return c.Next()
 }
