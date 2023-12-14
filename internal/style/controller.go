@@ -3,6 +3,7 @@ package style
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/go-playground/validator/v10"
@@ -256,6 +257,8 @@ func (s *StyleController) markTrend(c *fiber.Ctx) error {
 	}
 
 	message, err := s.storage.trend(userName, req.Id, c.Context())
+
+	fmt.Println(err)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(markTrendResponse{
 			Message: "something went wrong",
@@ -263,7 +266,40 @@ func (s *StyleController) markTrend(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.Status(fiber.StatusBadRequest).JSON(markTrendResponse{
+	return c.Status(fiber.StatusOK).JSON(markTrendResponse{
+		Message: message,
+		Success: true,
+	})
+}
+
+func (s *StyleController) unMarkTrend(c *fiber.Ctx) error {
+	var req markTrendRequest
+	c.BodyParser(&req)
+
+	err := validate.Struct(req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(markTrendResponse{
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	localData := c.Locals("userName")
+	userName, cnvErr := localData.(string)
+
+	if !cnvErr {
+		return errors.New("not able to covert")
+	}
+
+	message, err := s.storage.unTrend(userName, req.Id, c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(markTrendResponse{
+			Message: "something went wrong",
+			Success: false,
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(markTrendResponse{
 		Message: message,
 		Success: true,
 	})

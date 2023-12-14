@@ -24,6 +24,7 @@ type feedStyle struct {
 	Image      string `json:"image"`
 	Links      []link `json:"links"`
 	User       user   `json:"user"`
+	IsMarked   bool   `json:"isMarked"`
 	Created_at string `json:"created_at"`
 }
 
@@ -51,7 +52,7 @@ func (f *FeedStorage) feed(userName string, ctx context.Context) ([]feedStyle, e
       MATCH(s:Style) 
       MATCH(l:Link)
       WHERE (s)-[:TAG_TO]->(:Tag)<-[:MARK_FAV]-(u) AND NOT (s)-[:CREATED_BY]->(u) AND (s)-[:LINKED_TO]->(l) AND (s)-[:CREATED_BY]->(p)
-      RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic} AS user, s.created_at AS created_at ORDER BY s.created_at DESC
+      RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, s.created_at AS created_at ORDER BY s.created_at DESC
       `,
 				map[string]interface{}{
 					"userName": userName,
@@ -85,6 +86,7 @@ func (f *FeedStorage) feed(userName string, ctx context.Context) ([]feedStyle, e
 			Image:      structData.Image,
 			Links:      structData.Links,
 			User:       structData.User,
+			IsMarked:   structData.IsMarked,
 			Created_at: structData.Created_at,
 		})
 	}

@@ -126,7 +126,7 @@ func (s *StyleStorage) trend(userName string, id string, ctx context.Context) (s
 				`,
 				map[string]interface{}{
 					"userName": userName,
-					"uuid":     id,
+					"id":       id,
 				})
 		})
 	if err != nil {
@@ -134,6 +134,30 @@ func (s *StyleStorage) trend(userName string, id string, ctx context.Context) (s
 	}
 
 	return "trend successfully", nil
+}
+
+func (s *StyleStorage) unTrend(userName string, id string, ctx context.Context) (string, error) {
+	session := s.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: s.dbName, AccessMode: neo4j.AccessModeWrite})
+	defer session.Close(ctx)
+
+	_, err := session.ExecuteWrite(ctx,
+		func(tx neo4j.ManagedTransaction) (any, error) {
+			return tx.Run(ctx,
+				`
+				MATCH (s:Style {uuid:$id})
+        MATCH (u:User {userName:$userName})-[r:MARKED_TREND]->(s)
+				DELETE r
+				`,
+				map[string]interface{}{
+					"userName": userName,
+					"id":       id,
+				})
+		})
+	if err != nil {
+		return "", err
+	}
+
+	return "unmarked successfully", nil
 }
 
 func (s *StyleStorage) clicked(userName string, id string, ctx context.Context) (string, error) {
