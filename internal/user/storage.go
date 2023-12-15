@@ -490,3 +490,27 @@ func (u *UserStorage) markFavTags(userName string, tags []string, ctx context.Co
 
 	return "marked successfully", nil
 }
+
+func (u *UserStorage) follow(userName string, followingUserName string, ctx context.Context) (string, error) {
+	session := u.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: u.dbName, AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+	_, err := session.ExecuteWrite(ctx,
+		func(tx neo4j.ManagedTransaction) (any, error) {
+			return tx.Run(ctx,
+				`MATCH (u:User {userName:$userName}) 
+         MATCH (p:User {userName:$followingUserName})
+         CREATE (u)-[:FOLLOWING]->(p)
+        `,
+				map[string]interface{}{
+					"userName":          userName,
+					"followingUserName": followingUserName,
+				},
+			)
+		},
+	)
+	if err != nil {
+		return "something went wrong", err
+	}
+
+	return "followed successfully", nil
+}

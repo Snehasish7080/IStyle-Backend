@@ -25,6 +25,7 @@ type feedStyle struct {
 	Links      []link `json:"links"`
 	User       user   `json:"user"`
 	IsMarked   bool   `json:"isMarked"`
+	TrendCount int    `json:"trendCount"`
 	Created_at string `json:"created_at"`
 }
 
@@ -52,7 +53,9 @@ func (f *FeedStorage) feed(userName string, ctx context.Context) ([]feedStyle, e
       MATCH(s:Style) 
       MATCH(l:Link)
       WHERE (s)-[:TAG_TO]->(:Tag)<-[:MARK_FAV]-(u) AND NOT (s)-[:CREATED_BY]->(u) AND (s)-[:LINKED_TO]->(l) AND (s)-[:CREATED_BY]->(p)
-      RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, s.created_at AS created_at ORDER BY s.created_at DESC
+      OPTIONAL MATCH (:User)-[r:MARKED_TREND]->(s)
+      WITH s,l,p,u, COUNT(r) AS trendCount
+      RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, trendCount,s.created_at AS created_at ORDER BY s.created_at DESC
       `,
 				map[string]interface{}{
 					"userName": userName,
@@ -87,6 +90,7 @@ func (f *FeedStorage) feed(userName string, ctx context.Context) ([]feedStyle, e
 			Links:      structData.Links,
 			User:       structData.User,
 			IsMarked:   structData.IsMarked,
+			TrendCount: structData.TrendCount,
 			Created_at: structData.Created_at,
 		})
 	}
