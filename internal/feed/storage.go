@@ -38,6 +38,7 @@ type link struct {
 type user struct {
 	UserName   string `json:"userName"`
 	ProfilePic string `json:"profilePic"`
+	IsFollwing bool   `json:"isFollowing"`
 }
 
 func (f *FeedStorage) feed(userName string, ctx context.Context) ([]feedStyle, error) {
@@ -55,7 +56,7 @@ func (f *FeedStorage) feed(userName string, ctx context.Context) ([]feedStyle, e
       WHERE (s)-[:TAG_TO]->(:Tag)<-[:MARK_FAV]-(u) AND NOT (s)-[:CREATED_BY]->(u) AND (s)-[:LINKED_TO]->(l) AND (s)-[:CREATED_BY]->(p)
       OPTIONAL MATCH (:User)-[r:MARKED_TREND]->(s)
       WITH s,l,p,u, COUNT(r) AS trendCount
-      RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, trendCount,s.created_at AS created_at ORDER BY s.created_at DESC
+      RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic, isFollowing:EXISTS((u)-[:FOLLOWING]->(p))} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, trendCount,s.created_at AS created_at ORDER BY s.created_at DESC
       `,
 				map[string]interface{}{
 					"userName": userName,
