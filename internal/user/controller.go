@@ -501,3 +501,38 @@ func (u *UserController) followUser(c *fiber.Ctx) error {
 		Success: true,
 	})
 }
+
+func (u *UserController) unfollowUser(c *fiber.Ctx) error {
+	var req followUserRequest
+	c.BodyParser(&req)
+
+	err := validate.Struct(req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(followUserResponse{
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+
+	localData := c.Locals("userName")
+	userName, cnvErr := localData.(string)
+
+	if !cnvErr {
+		return c.Status(fiber.StatusInternalServerError).JSON(followUserResponse{
+			Message: "something went wrong",
+			Success: false,
+		})
+	}
+	message, err := u.storage.unfollow(userName, req.UserName, c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(followUserResponse{
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(followUserResponse{
+		Message: message,
+		Success: true,
+	})
+}
