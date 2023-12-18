@@ -524,7 +524,7 @@ func (u *UserStorage) unfollow(userName string, followingUserName string, ctx co
 				`MATCH (u:User {userName:$userName}) 
          MATCH (p:User {userName:$followingUserName})
          MATCH (u)-[f:FOLLOWING]->(p)
-         CREATE (u)-[:FOLLOWING]->(p)
+         DELETE f
         `,
 				map[string]interface{}{
 					"userName":          userName,
