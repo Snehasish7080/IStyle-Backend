@@ -410,7 +410,7 @@ func (u *UserStorage) userNameExists(userName string, ctx context.Context) bool 
 	return result != nil
 }
 
-func (u *UserStorage) getUserByUserName(userName string, ctx context.Context) (*models.User, error) {
+func (u *UserStorage) getUserByUserName(userName string, loggedInUser string, ctx context.Context) (*models.User, error) {
 	isUserNameExist := u.userNameExists(userName, ctx)
 
 	if !isUserNameExist {
@@ -422,9 +422,12 @@ func (u *UserStorage) getUserByUserName(userName string, ctx context.Context) (*
 	result, _ := session.ExecuteRead(ctx,
 		func(tx neo4j.ManagedTransaction) (interface{}, error) {
 			result, err := tx.Run(ctx,
-				"MATCH (u:User {userName:$userName}) RETURN u.firstName AS firstName, u.lastName AS lastName, u.userName AS userName, u.bio AS bio, u.profilePic AS profilePic",
+				`MATCH (u:User {userName:$userName})
+         MATCH (p:User{userName:$loggedInUser})
+         RETURN u.firstName AS firstName, u.lastName AS lastName, u.userName AS userName, u.bio AS bio, u.profilePic AS profilePic, EXISTS((p)-[:FOLLOWING]->(u)) AS isFollowing`,
 				map[string]interface{}{
-					"userName": userName,
+					"userName":     userName,
+					"loggedInUser": loggedInUser,
 				},
 			)
 			if err != nil {
@@ -440,6 +443,7 @@ func (u *UserStorage) getUserByUserName(userName string, ctx context.Context) (*
 			userName, _ := record.Get("userName")
 			bio, _ := record.Get("bio")
 			profilePic, _ := record.Get("profilePic")
+			isFollowing, _ := record.Get("isFollowing")
 			if bio == nil {
 				bio = ""
 			}
@@ -447,11 +451,12 @@ func (u *UserStorage) getUserByUserName(userName string, ctx context.Context) (*
 				profilePic = ""
 			}
 			return &models.User{
-				FirstName:  firstName.(string),
-				LastName:   lastName.(string),
-				UserName:   userName.(string),
-				Bio:        bio.(string),
-				ProfilePic: profilePic.(string),
+				FirstName:   firstName.(string),
+				LastName:    lastName.(string),
+				UserName:    userName.(string),
+				Bio:         bio.(string),
+				ProfilePic:  profilePic.(string),
+				IsFollowing: isFollowing.(bool),
 			}, nil
 		})
 

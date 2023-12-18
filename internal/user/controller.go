@@ -215,6 +215,7 @@ type userDetail struct {
 	ProfilePic       string `json:"profilePic"`
 	IsMobileVerified bool   `json:"isMobileVerified"`
 	IsComplete       bool   `json:"isComplete"`
+	IsFollowing      bool   `json:"isFollowing"`
 }
 
 func (u *UserController) getUserDetail(c *fiber.Ctx) error {
@@ -394,7 +395,17 @@ func (u *UserController) getUserDetailByUserName(c *fiber.Ctx) error {
 			Success: false,
 		})
 	}
-	user, err := u.storage.getUserByUserName(userName, c.Context())
+	localData := c.Locals("userName")
+	loggedInuser, cnvErr := localData.(string)
+
+	if !cnvErr {
+		return c.Status(fiber.StatusInternalServerError).JSON(userDetailResponse{
+			Message: "something went wrong",
+			Success: false,
+		})
+	}
+
+	user, err := u.storage.getUserByUserName(userName, loggedInuser, c.Context())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(userDetailResponse{
 			Message: err.Error(),
@@ -403,11 +414,12 @@ func (u *UserController) getUserDetailByUserName(c *fiber.Ctx) error {
 	}
 	return c.Status(fiber.StatusOK).JSON(userDetailResponse{
 		Data: userDetail{
-			FirstName:  user.FirstName,
-			LastName:   user.LastName,
-			UserName:   user.UserName,
-			Bio:        user.Bio,
-			ProfilePic: user.ProfilePic,
+			FirstName:   user.FirstName,
+			LastName:    user.LastName,
+			UserName:    user.UserName,
+			Bio:         user.Bio,
+			ProfilePic:  user.ProfilePic,
+			IsFollowing: user.IsFollowing,
 		},
 		Message: "found successfully",
 		Success: true,

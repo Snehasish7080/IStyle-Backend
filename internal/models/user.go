@@ -17,4 +17,5 @@ type User struct {
 	IsMobileVerified bool   `json:"isMobileVerified"`
 	IsComplete       bool   `json:"isComplete"`
 	Bio              string `json:"bio"`
+	IsFollowing      bool   `json:"isFollowing"`
 }
