@@ -23,7 +23,6 @@ func NewTagStorage(db neo4j.DriverWithContext, dbName string) *TagStorage {
 }
 
 func (t *TagStorage) create(name string, ctx context.Context) (string, error) {
-
 	isTagExist := t.isTagExists(name, ctx)
 
 	if isTagExist {
@@ -40,17 +39,15 @@ func (t *TagStorage) create(name string, ctx context.Context) (string, error) {
 				"CREATE (:Tag {name: $name, uuid:randomUUID(), created_at:datetime($createdAt), updated_at:datetime($updatedAt)})",
 				map[string]any{"name": name, "createdAt": now.Format(time.RFC3339), "updatedAt": now.Format(time.RFC3339)})
 		})
-
 	if err != nil {
 		return "", err
 	}
 
 	return "Created Successfully", nil
-
 }
 
 func (t *TagStorage) getAll(ctx context.Context) ([]models.Tag, error) {
-	session := t.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: t.dbName, AccessMode: neo4j.AccessModeWrite})
+	session := t.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: t.dbName, AccessMode: neo4j.AccessModeRead})
 	defer session.Close(ctx)
 
 	tags, err := session.ExecuteRead(ctx,
@@ -64,14 +61,12 @@ func (t *TagStorage) getAll(ctx context.Context) ([]models.Tag, error) {
 			}
 
 			record, err := result.Collect(ctx)
-
 			if err != nil {
 				return nil, err
 			}
 
 			return record, nil
 		})
-
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +86,6 @@ func (t *TagStorage) getAll(ctx context.Context) ([]models.Tag, error) {
 	}
 
 	return arr, nil
-
 }
 
 func (t *TagStorage) isTagExists(name string, ctx context.Context) bool {

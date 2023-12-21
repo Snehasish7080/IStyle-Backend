@@ -11,6 +11,7 @@ import (
 	"github.com/zone/IStyle/config"
 	"github.com/zone/IStyle/internal/feed"
 	"github.com/zone/IStyle/internal/middleware"
+	"github.com/zone/IStyle/internal/search"
 	"github.com/zone/IStyle/internal/storage"
 	"github.com/zone/IStyle/internal/style"
 	"github.com/zone/IStyle/internal/tag"
@@ -98,6 +99,11 @@ func buildServer(env config.EnvVars) (*fiber.App, func(), error) {
 	feedStore := feed.NewFeedStorage(db, env.NEO4jDB_NAME)
 	feedController := feed.NewFeedController(feedStore)
 	feed.AddFeedRoutes(app, appMiddleware, feedController)
+
+	// search domain
+	searchStore := search.NewSearchStorage(db, env.NEO4jDB_NAME)
+	searchController := search.NewTagController(searchStore)
+	search.AddSearchRoutes(app, appMiddleware, searchController)
 
 	return app, func() {
 		storage.CloseNeo4j(db)
