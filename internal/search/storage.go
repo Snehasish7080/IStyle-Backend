@@ -32,10 +32,10 @@ func (s *SearchStorage) searchText(text string, ctx context.Context) ([]searchTe
 	searchResult, err := session.ExecuteRead(ctx,
 		func(tx neo4j.ManagedTransaction) (any, error) {
 			result, err := tx.Run(ctx,
-				`CALL db.index.fulltext.queryNodes("SearchWithTitleAndName", "$text*") YIELD node, score
+				`CALL db.index.fulltext.queryNodes("SearchWithTitleAndName", $text) YIELD node, score
         RETURN node.userName AS userName, node.name AS tag, node.title AS hashtag,score ORDER BY score`,
 				map[string]any{
-					"text": text,
+					"text": text + "*",
 				},
 			)
 			if err != nil {
