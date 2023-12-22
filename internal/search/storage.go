@@ -23,6 +23,7 @@ type searchTextResult struct {
 	UserName string `json:"userName"`
 	Tag      string `json:"tag"`
 	Hashtag  string `json:"hashtag"`
+	UserPic  string `json:"userPic"`
 }
 
 func (s *SearchStorage) searchText(text string, ctx context.Context) ([]searchTextResult, error) {
@@ -33,7 +34,7 @@ func (s *SearchStorage) searchText(text string, ctx context.Context) ([]searchTe
 		func(tx neo4j.ManagedTransaction) (any, error) {
 			result, err := tx.Run(ctx,
 				`CALL db.index.fulltext.queryNodes("SearchWithTitleAndName", $text) YIELD node, score
-        RETURN node.userName AS userName, node.name AS tag, node.title AS hashtag,score ORDER BY score`,
+        RETURN node.userName AS userName, node.profilePic AS userPic, node.name AS tag, node.title AS hashtag,score ORDER BY score`,
 				map[string]any{
 					"text": text + "*",
 				},
@@ -65,6 +66,7 @@ func (s *SearchStorage) searchText(text string, ctx context.Context) ([]searchTe
 			UserName: structData.UserName,
 			Tag:      structData.Tag,
 			Hashtag:  structData.Hashtag,
+			UserPic:  structData.UserPic,
 		})
 	}
 
