@@ -34,4 +34,7 @@ func AddUserRoutes(app *fiber.App, middleware *middleware.AuthMiddleware, contro
 	user.Post("/follow", controller.followUser)
 	user.Post("/unfollow", controller.unfollowUser)
 	user.Get("/followers", controller.getFollowers)
+	user.Get("/followers/:userName", controller.getUserFollowers)
+	user.Get("/followings", controller.getFollowings)
+	user.Get("/followings/:userName", controller.getUserFollowings)
 }

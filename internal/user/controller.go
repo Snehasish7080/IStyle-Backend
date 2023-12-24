@@ -584,3 +584,129 @@ func (u *UserController) getFollowers(c *fiber.Ctx) error {
 		Success: true,
 	})
 }
+
+type getUserFollowersResponse struct {
+	Data    []userFollower `json:"data"`
+	Message string         `json:"message"`
+	Success bool           `json:"success"`
+}
+
+func (u *UserController) getUserFollowers(c *fiber.Ctx) error {
+	userName := c.Params("userName")
+
+	if userName == "" {
+		return c.Status(fiber.StatusInternalServerError).JSON(getUserFollowersResponse{
+			Message: "Invalid request",
+			Success: false,
+		})
+	}
+
+	localData := c.Locals("userName")
+	loggedInUser, cnvErr := localData.(string)
+
+	if !cnvErr {
+		return c.Status(fiber.StatusInternalServerError).JSON(getUserFollowersResponse{
+			Message: "something went wrong",
+			Success: false,
+		})
+	}
+
+	result, err := u.storage.followersByUserName(userName, loggedInUser, c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(getUserFollowersResponse{
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+
+	jsonData, _ := json.Marshal(result)
+	var structData []userFollower
+	json.Unmarshal(jsonData, &structData)
+
+	return c.Status(fiber.StatusOK).JSON(getUserFollowersResponse{
+		Data:    structData,
+		Message: "found successfully",
+		Success: true,
+	})
+}
+
+type getFollowingsResponse struct {
+	Data    []following `json:"data"`
+	Message string      `json:"message"`
+	Success bool        `json:"success"`
+}
+
+func (u *UserController) getFollowings(c *fiber.Ctx) error {
+	localData := c.Locals("userName")
+	userName, cnvErr := localData.(string)
+
+	if !cnvErr {
+		return c.Status(fiber.StatusInternalServerError).JSON(getFollowingsResponse{
+			Message: "something went wrong",
+			Success: false,
+		})
+	}
+
+	result, err := u.storage.followings(userName, c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(getFollowingsResponse{
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+
+	jsonData, _ := json.Marshal(result)
+	var structData []following
+	json.Unmarshal(jsonData, &structData)
+
+	return c.Status(fiber.StatusOK).JSON(getFollowingsResponse{
+		Data:    structData,
+		Message: "found successfully",
+		Success: true,
+	})
+}
+
+type getUserFollowingsResponse struct {
+	Data    []userFollowing `json:"data"`
+	Message string          `json:"message"`
+	Success bool            `json:"success"`
+}
+
+func (u *UserController) getUserFollowings(c *fiber.Ctx) error {
+	userName := c.Params("userName")
+
+	if userName == "" {
+		return c.Status(fiber.StatusInternalServerError).JSON(getUserFollowingsResponse{
+			Message: "Invalid request",
+			Success: false,
+		})
+	}
+
+	localData := c.Locals("userName")
+	loggedInUser, cnvErr := localData.(string)
+
+	if !cnvErr {
+		return c.Status(fiber.StatusInternalServerError).JSON(getUserFollowingsResponse{
+			Message: "something went wrong",
+			Success: false,
+		})
+	}
+
+	result, err := u.storage.followingsByUserName(userName, loggedInUser, c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(getUserFollowingsResponse{
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+
+	jsonData, _ := json.Marshal(result)
+	var structData []userFollowing
+	json.Unmarshal(jsonData, &structData)
+
+	return c.Status(fiber.StatusOK).JSON(getUserFollowingsResponse{
+		Data:    structData,
+		Message: "found successfully",
+		Success: true,
+	})
+}
