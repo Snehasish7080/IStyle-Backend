@@ -548,3 +548,39 @@ func (u *UserController) unfollowUser(c *fiber.Ctx) error {
 		Success: true,
 	})
 }
+
+type getFollowersResponse struct {
+	Data    []follower `json:"data"`
+	Message string     `json:"message"`
+	Success bool       `json:"success"`
+}
+
+func (u *UserController) getFollowers(c *fiber.Ctx) error {
+	localData := c.Locals("userName")
+	userName, cnvErr := localData.(string)
+
+	if !cnvErr {
+		return c.Status(fiber.StatusInternalServerError).JSON(getFollowersResponse{
+			Message: "something went wrong",
+			Success: false,
+		})
+	}
+
+	result, err := u.storage.followers(userName, c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(getFollowersResponse{
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+
+	jsonData, _ := json.Marshal(result)
+	var structData []follower
+	json.Unmarshal(jsonData, &structData)
+
+	return c.Status(fiber.StatusOK).JSON(getFollowersResponse{
+		Data:    structData,
+		Message: "found successfully",
+		Success: true,
+	})
+}

@@ -33,4 +33,5 @@ func AddUserRoutes(app *fiber.App, middleware *middleware.AuthMiddleware, contro
 	user.Post("/fav/tag", controller.markUserFavTags)
 	user.Post("/follow", controller.followUser)
 	user.Post("/unfollow", controller.unfollowUser)
+	user.Get("/followers", controller.getFollowers)
 }

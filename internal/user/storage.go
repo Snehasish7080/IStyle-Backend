@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -543,4 +544,109 @@ func (u *UserStorage) unfollow(userName string, followingUserName string, ctx co
 	}
 
 	return "unfollowed successfully", nil
+}
+
+type follower struct {
+	UserName   string `json:"userName"`
+	ProfilePic string `json:"profilePic"`
+}
+
+func (u *UserStorage) followers(userName string, ctx context.Context) ([]follower, error) {
+	session := u.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: u.dbName, AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	users, err := session.ExecuteRead(ctx,
+		func(tx neo4j.ManagedTransaction) (any, error) {
+			result, err := tx.Run(ctx,
+				`
+        MATCH(u:User{userName:$userName})-[:FOLLOWING]->(p:User)
+        return p.userName AS userName, p.profilePic AS profilePic 
+        `,
+				map[string]any{
+					"userName": userName,
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			record, err := result.Collect(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			return record, nil
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	var arr []follower
+
+	for _, user := range users.([]*neo4j.Record) {
+		jsonData, _ := json.Marshal(user.AsMap())
+
+		var structData follower
+		json.Unmarshal(jsonData, &structData)
+
+		arr = append(arr, follower{
+			UserName:   structData.UserName,
+			ProfilePic: structData.ProfilePic,
+		})
+	}
+
+	return arr, nil
+}
+
+func (u *UserStorage) followersByUserName(userName string, ctx context.Context) ([]follower, error) {
+	isUserNameExist := u.userNameExists(userName, ctx)
+
+	if !isUserNameExist {
+		return nil, errors.New("user does not exists")
+	}
+
+	session := u.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: u.dbName, AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	users, err := session.ExecuteRead(ctx,
+		func(tx neo4j.ManagedTransaction) (any, error) {
+			result, err := tx.Run(ctx,
+				`
+        MATCH(u:User{userName:$userName})-[:FOLLOWING]->(p:User)
+        return p.userName AS userName, p.profilePic AS profilePic 
+        `,
+				map[string]any{
+					"userName": userName,
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			record, err := result.Collect(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			return record, nil
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	var arr []follower
+
+	for _, user := range users.([]*neo4j.Record) {
+		jsonData, _ := json.Marshal(user.AsMap())
+
+		var structData follower
+		json.Unmarshal(jsonData, &structData)
+
+		arr = append(arr, follower{
+			UserName:   structData.UserName,
+			ProfilePic: structData.ProfilePic,
+		})
+	}
+
+	return arr, nil
 }
