@@ -120,9 +120,10 @@ type link struct {
 }
 
 type createStyleRequest struct {
-	Image string   `json:"image"`
-	Links []link   `json:"links"`
-	Tags  []string `json:"tags"`
+	Image    string   `json:"image"`
+	Links    []link   `json:"links"`
+	Tags     []string `json:"tags"`
+	Hashtags []string `json:"hashtags"`
 }
 type createStyleResponse struct {
 	Message string `json:"message"`
@@ -152,7 +153,7 @@ func (s *StyleController) createStyle(c *fiber.Ctx) error {
 	data, _ := json.Marshal(req.Links)
 	json.Unmarshal(data, &links)
 
-	message, err := s.storage.create(userName, req.Image, links, req.Tags, c.Context())
+	message, err := s.storage.create(userName, req.Image, links, req.Tags, req.Hashtags, c.Context())
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(createStyleResponse{
 			Message: "something went wrong",

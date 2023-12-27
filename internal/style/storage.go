@@ -21,7 +21,7 @@ func NewStyleStorage(db neo4j.DriverWithContext, dbName string) *StyleStorage {
 	}
 }
 
-func (s *StyleStorage) create(userName string, image string, links []map[string]interface{}, tags []string, ctx context.Context) (string, error) {
+func (s *StyleStorage) create(userName string, image string, links []map[string]interface{}, tags []string, hashtags []string, ctx context.Context) (string, error) {
 	now := time.Now()
 	session := s.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: s.dbName, AccessMode: neo4j.AccessModeWrite})
 	defer session.Close(ctx)
@@ -39,7 +39,13 @@ func (s *StyleStorage) create(userName string, image string, links []map[string]
           CREATE (l:Link {image:link.image, url:link.url, uuid:randomUUID(), created_at:datetime($createdAt), updated_at:datetime($updatedAt)})
           RETURN l
         }
+        CALL{
+          UNWIND $hashtags AS hashtag
+          CREATE (h:Hashtag {title:hashtag, uuid:randomUUID(), created_at:datetime($createdAt), updated_at:datetime($updatedAt)})
+          RETURN h
+        }
         CREATE (s)-[:LINKED_TO]->(l)
+        CREATE (s)-[:HASHTAG_TO]->(h)
         WITH s
 				UNWIND $tags AS tagId
 				MATCH (t:Tag {uuid:tagId})
@@ -50,6 +56,7 @@ func (s *StyleStorage) create(userName string, image string, links []map[string]
 					"image":     image,
 					"links":     links,
 					"tags":      tags,
+					"hashtags":  hashtags,
 					"createdAt": now.Format(time.RFC3339),
 					"updatedAt": now.Format(time.RFC3339),
 				})
