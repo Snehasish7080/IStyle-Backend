@@ -35,17 +35,18 @@ func (s *StyleStorage) create(userName string, image string, links []map[string]
         CREATE (s)-[:CREATED_BY]->(u)
         WITH s
         CALL{
+          WITH s
           UNWIND $links AS link
           CREATE (l:Link {image:link.image, url:link.url, uuid:randomUUID(), created_at:datetime($createdAt), updated_at:datetime($updatedAt)})
-          RETURN l
+          MERGE (s)-[:LINKED_TO]->(l)
         }
+        WITH s
         CALL{
+          WITH s
           UNWIND $hashtags AS hashtag
           CREATE (h:Hashtag {title:hashtag, uuid:randomUUID(), created_at:datetime($createdAt), updated_at:datetime($updatedAt)})
-          RETURN h
+          MERGE (s)-[:HASHTAG_TO]->(h)
         }
-        CREATE (s)-[:LINKED_TO]->(l)
-        CREATE (s)-[:HASHTAG_TO]->(h)
         WITH s
 				UNWIND $tags AS tagId
 				MATCH (t:Tag {uuid:tagId})
