@@ -52,9 +52,9 @@ func (f *FeedStorage) feed(userName string, ctx context.Context) ([]feedStyle, e
       MATCH(u:User{userName:$userName})
       MATCH(p:User)
       MATCH(s:Style) 
-      MATCH(l:Link)
-      WHERE (s)-[:TAG_TO]->(:Tag)<-[:MARK_FAV]-(u) AND NOT (s)-[:CREATED_BY]->(u) AND (s)-[:LINKED_TO]->(l) AND (s)-[:CREATED_BY]->(p)
+      WHERE ((s)-[:TAG_TO]->(:Tag)<-[:MARK_FAV]-(u) AND NOT (s)-[:CREATED_BY]->(u) AND (s)-[:CREATED_BY]->(p)) OR ((s)-[:CREATED_BY]->(p)<-[:FOLLOWING]-(u))
       OPTIONAL MATCH (:User)-[r:MARKED_TREND]->(s)
+      OPTIONAL MATCH (s)-[:LINKED_TO]->(l:Link)
       WITH s,l,p,u, COUNT(r) AS trendCount
       RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic, isFollowing:EXISTS((u)-[:FOLLOWING]->(p))} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, trendCount,s.created_at AS created_at ORDER BY s.created_at DESC
       `,
