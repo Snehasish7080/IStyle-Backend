@@ -49,3 +49,37 @@ func (s *SearchController) getSearchByTextResult(c *fiber.Ctx) error {
 		Success: true,
 	})
 }
+
+type styleByTextResponse struct {
+	Data    []stylesByTextResult `json:"data"`
+	Message string               `json:"message"`
+	Success bool                 `json:"success"`
+}
+
+func (s *SearchController) getStyleByTextResult(c *fiber.Ctx) error {
+	text := c.Params("text")
+
+	if text == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(styleByTextResponse{
+			Message: "invalid request",
+			Success: false,
+		})
+	}
+	result, err := s.storage.stylesByText(text, c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(styleByTextResponse{
+			Message: "something went wrong",
+			Success: false,
+		})
+	}
+
+	jsonData, _ := json.Marshal(result)
+	var structData []stylesByTextResult
+	json.Unmarshal(jsonData, &structData)
+
+	return c.Status(fiber.StatusOK).JSON(styleByTextResponse{
+		Data:    structData,
+		Message: "found successfully",
+		Success: true,
+	})
+}
