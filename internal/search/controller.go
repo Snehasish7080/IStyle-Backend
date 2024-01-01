@@ -56,7 +56,7 @@ type styleByTextResponse struct {
 	Success bool                 `json:"success"`
 }
 
-func (s *SearchController) getStyleByTextResult(c *fiber.Ctx) error {
+func (s *SearchController) searchStyleByTextResult(c *fiber.Ctx) error {
 	text := c.Params("text")
 
 	if text == "" {

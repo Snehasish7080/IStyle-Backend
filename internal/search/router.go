@@ -11,5 +11,5 @@ func AddSearchRoutes(app *fiber.App, middleware *middleware.AuthMiddleware, cont
 	// add routes here
 
 	search.Get("/:text", controller.getSearchByTextResult)
-	search.Get("/styles/:text", controller.getStyleByTextResult)
+	search.Get("/styles/:text", controller.searchStyleByTextResult)
 }
