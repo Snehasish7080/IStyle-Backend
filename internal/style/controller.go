@@ -346,3 +346,51 @@ func (s *StyleController) styleClicked(c *fiber.Ctx) error {
 		Success: true,
 	})
 }
+
+type styleByIdResponse struct {
+	Data    styleById `json:"data"`
+	Message string    `json:"message"`
+	Success bool      `json:"success"`
+}
+
+func (s *StyleController) getStyleById(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	if id == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(styleByIdResponse{
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	localData := c.Locals("userName")
+	userName, cnvErr := localData.(string)
+
+	if !cnvErr {
+		return c.Status(fiber.StatusBadRequest).JSON(styleByIdResponse{
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	style, err := s.storage.styleById(userName, id, c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(styleByIdResponse{
+			Message: "something went wrong",
+			Success: false,
+		})
+	}
+
+	return c.Status(fiber.StatusBadRequest).JSON(styleByIdResponse{
+		Data: styleById{
+			Id:         style.Id,
+			Image:      style.Image,
+			Links:      style.Links,
+			TrendCount: style.TrendCount,
+			IsMarked:   style.IsMarked,
+			User:       style.User,
+		},
+		Message: "found successfully",
+		Success: true,
+	})
+}

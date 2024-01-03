@@ -3,6 +3,7 @@ package style
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -190,4 +191,75 @@ func (s *StyleStorage) clicked(userName string, id string, ctx context.Context) 
 	}
 
 	return "trend successfully", nil
+}
+
+type styleById struct {
+	Id         string      `json:"id"`
+	Image      string      `json:"image"`
+	Links      []styleLink `json:"links"`
+	TrendCount int         `json:"trendCount"`
+	IsMarked   bool        `json:"isMarked"`
+	User       styleUser   `json:"user"`
+}
+type styleLink struct {
+	Id    string `json:"id"`
+	Image string `json:"image"`
+	Url   string `json:"url"`
+}
+
+type styleUser struct {
+	UserName   string `json:"userName"`
+	ProfilePic string `json:"profilePic"`
+}
+
+func (s *StyleStorage) styleById(userName string, id string, ctx context.Context) (*styleById, error) {
+	session := s.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: s.dbName, AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	result, _ := session.ExecuteRead(ctx,
+		func(tx neo4j.ManagedTransaction) (interface{}, error) {
+			result, err := tx.Run(ctx,
+				`MATCH(u:User{userName:$userName})
+         MATCH (s:Style{uuid:"7eb3c4ad-4dbf-412f-b2a7-8120ca7d3711"})
+         MATCH ((s)-[:LINKED_TO]->(l:Link))
+         MATCH ((s)-[:CREATED_BY]->(p:User))
+         OPTIONAL MATCH ((:User)-[m:MARKED_TREND]->(s))
+         WITH s,l,u,p, COUNT(m) AS trendCount
+        RETURN s.uuid AS id, s.image AS image, collect({id:l.uuid, image:l.image, url:l.url}) AS links, trendCount, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMArked, {userName:p.userName,profilePic:p.profilePic} AS user
+        `,
+				map[string]interface{}{
+					"userName": userName,
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			record, err := result.Single(ctx)
+			if err != nil {
+				return nil, err
+			}
+			id, _ := record.Get("id")
+			image, _ := record.Get("image")
+			links, _ := record.Get("links")
+			trendCount, _ := record.Get("trendCount")
+			isMarked, _ := record.Get("isMarked")
+			user, _ := record.Get("user")
+			return styleById{
+				Id:         id.(string),
+				Image:      image.(string),
+				Links:      links.([]styleLink),
+				TrendCount: trendCount.(int),
+				IsMarked:   isMarked.(bool),
+				User:       user.(styleUser),
+			}, nil
+		})
+
+	style, err := result.(*styleById)
+
+	if !err {
+		return nil, errors.New("something went wrong")
+	}
+
+	return style, nil
 }
