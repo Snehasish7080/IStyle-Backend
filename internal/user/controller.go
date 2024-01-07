@@ -203,9 +203,9 @@ func (u *UserController) loginUser(c *fiber.Ctx) error {
 }
 
 type userDetailResponse struct {
-	Data    userDetail `json:"data"`
-	Message string     `json:"message"`
-	Success bool       `json:"success"`
+	Data    *userDetail `json:"data"`
+	Message string      `json:"message"`
+	Success bool        `json:"success"`
 }
 type userDetail struct {
 	FirstName        string `json:"firstName"`
@@ -233,7 +233,7 @@ func (u *UserController) getUserDetail(c *fiber.Ctx) error {
 		})
 	}
 	return c.Status(fiber.StatusOK).JSON(userDetailResponse{
-		Data: userDetail{
+		Data: &userDetail{
 			FirstName:        user.FirstName,
 			LastName:         user.LastName,
 			UserName:         user.UserName,
@@ -361,9 +361,9 @@ type GetProfileUploadKeyData struct {
 	Key string `json:"key"`
 }
 type getProfileUploadKeyResponse struct {
-	Data    GetProfileUploadKeyData `json:"data"`
-	Message string                  `json:"message"`
-	Success bool                    `json:"success"`
+	Data    *GetProfileUploadKeyData `json:"data"`
+	Message string                   `json:"message"`
+	Success bool                     `json:"success"`
 }
 
 func (u *UserController) getProfileUploadKey(c *fiber.Ctx) error {
@@ -377,7 +377,7 @@ func (u *UserController) getProfileUploadKey(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(getProfileUploadKeyResponse{
-		Data: GetProfileUploadKeyData{
+		Data: &GetProfileUploadKeyData{
 			Url: url,
 			Key: id.String(),
 		},
@@ -413,7 +413,7 @@ func (u *UserController) getUserDetailByUserName(c *fiber.Ctx) error {
 		})
 	}
 	return c.Status(fiber.StatusOK).JSON(userDetailResponse{
-		Data: userDetail{
+		Data: &userDetail{
 			FirstName:   user.FirstName,
 			LastName:    user.LastName,
 			UserName:    user.UserName,

@@ -48,7 +48,6 @@ func (t *TagController) createTag(c *fiber.Ctx) error {
 	}
 
 	message, err := t.storage.create(req.Name, c.Context())
-
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(createTagResponse{
 			Message: err.Error(),
@@ -74,15 +73,12 @@ type getAllTagResponse struct {
 }
 
 func (t *TagController) getAllTags(c *fiber.Ctx) error {
-
 	result, err := t.storage.getAll(c.Context())
-
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(getAllTagResponse{
 			Message: err.Error(),
 			Success: false,
 		})
-
 	}
 
 	jsonData, _ := json.Marshal(result)
@@ -94,5 +90,4 @@ func (t *TagController) getAllTags(c *fiber.Ctx) error {
 		Message: "found successfully",
 		Success: true,
 	})
-
 }
