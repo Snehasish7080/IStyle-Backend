@@ -231,7 +231,7 @@ func (s *StyleStorage) styleById(userName string, id string, ctx context.Context
          MATCH ((s)-[:CREATED_BY]->(p:User))
          OPTIONAL MATCH ((:User)-[m:MARKED_TREND]->(s))
          WITH s,l,u,p, COUNT(m) AS trendCount
-        RETURN s.uuid AS id, s.image AS image, collect({id:l.uuid, image:l.image, url:l.url}) AS links, trendCount, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMArked, {userName:p.userName,profilePic:p.profilePic} AS user
+        RETURN s.uuid AS id, s.image AS image, collect({id:l.uuid, image:l.image, url:l.url}) AS links, trendCount, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, {userName:p.userName,profilePic:p.profilePic} AS user
         `,
 				map[string]interface{}{
 					"userName": userName,
