@@ -348,9 +348,9 @@ func (s *StyleController) styleClicked(c *fiber.Ctx) error {
 }
 
 type styleByIdResponse struct {
-	Data    styleById `json:"data"`
-	Message string    `json:"message"`
-	Success bool      `json:"success"`
+	Data    *styleById `json:"data"`
+	Message string     `json:"message"`
+	Success bool       `json:"success"`
 }
 
 func (s *StyleController) getStyleById(c *fiber.Ctx) error {
@@ -376,13 +376,13 @@ func (s *StyleController) getStyleById(c *fiber.Ctx) error {
 	style, err := s.storage.styleById(userName, id, c.Context())
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(styleByIdResponse{
-			Message: "something went wrong",
+			Message: err.Error(),
 			Success: false,
 		})
 	}
 
-	return c.Status(fiber.StatusBadRequest).JSON(styleByIdResponse{
-		Data: styleById{
+	return c.Status(fiber.StatusOK).JSON(styleByIdResponse{
+		Data: &styleById{
 			Id:         style.Id,
 			Image:      style.Image,
 			Links:      style.Links,

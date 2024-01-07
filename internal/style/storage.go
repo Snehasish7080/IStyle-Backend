@@ -197,7 +197,7 @@ type styleById struct {
 	Id         string      `json:"id"`
 	Image      string      `json:"image"`
 	Links      []styleLink `json:"links"`
-	TrendCount int         `json:"trendCount"`
+	TrendCount int64       `json:"trendCount"`
 	IsMarked   bool        `json:"isMarked"`
 	User       styleUser   `json:"user"`
 }
@@ -216,11 +216,17 @@ func (s *StyleStorage) styleById(userName string, id string, ctx context.Context
 	session := s.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: s.dbName, AccessMode: neo4j.AccessModeRead})
 	defer session.Close(ctx)
 
+	isStyleExist := s.checkStyleExists(id, ctx)
+
+	if !isStyleExist {
+		return nil, errors.New("invalid request")
+	}
+
 	result, _ := session.ExecuteRead(ctx,
 		func(tx neo4j.ManagedTransaction) (interface{}, error) {
 			result, err := tx.Run(ctx,
 				`MATCH(u:User{userName:$userName})
-         MATCH (s:Style{uuid:"7eb3c4ad-4dbf-412f-b2a7-8120ca7d3711"})
+         MATCH (s:Style{uuid: $id})
          MATCH ((s)-[:LINKED_TO]->(l:Link))
          MATCH ((s)-[:CREATED_BY]->(p:User))
          OPTIONAL MATCH ((:User)-[m:MARKED_TREND]->(s))
@@ -229,6 +235,7 @@ func (s *StyleStorage) styleById(userName string, id string, ctx context.Context
         `,
 				map[string]interface{}{
 					"userName": userName,
+					"id":       id,
 				},
 			)
 			if err != nil {
@@ -245,13 +252,26 @@ func (s *StyleStorage) styleById(userName string, id string, ctx context.Context
 			trendCount, _ := record.Get("trendCount")
 			isMarked, _ := record.Get("isMarked")
 			user, _ := record.Get("user")
-			return styleById{
+
+			var arr []styleLink
+			jsonData, _ := json.Marshal(links)
+			json.Unmarshal(jsonData, &arr)
+
+			var postUser styleUser
+			userjsonData, _ := json.Marshal(user)
+			json.Unmarshal(userjsonData, &postUser)
+
+			if isMarked == nil {
+				isMarked = false
+			}
+
+			return &styleById{
 				Id:         id.(string),
 				Image:      image.(string),
-				Links:      links.([]styleLink),
-				TrendCount: trendCount.(int),
+				Links:      arr,
+				TrendCount: trendCount.(int64),
 				IsMarked:   isMarked.(bool),
-				User:       user.(styleUser),
+				User:       postUser,
 			}, nil
 		})
 
@@ -262,4 +282,30 @@ func (s *StyleStorage) styleById(userName string, id string, ctx context.Context
 	}
 
 	return style, nil
+}
+
+func (s *StyleStorage) checkStyleExists(id string, ctx context.Context) bool {
+	session := s.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: s.dbName, AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	result, _ := session.ExecuteRead(ctx,
+		func(tx neo4j.ManagedTransaction) (interface{}, error) {
+			result, err := tx.Run(ctx,
+				"MATCH (s:Style {uuid:$id}) RETURN s.uuid AS uuid",
+				map[string]interface{}{
+					"id": id,
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
+			record, err := result.Single(ctx)
+			if err != nil {
+				return nil, err
+			}
+			uuid, _ := record.Get("uuid")
+			return uuid.(string), nil
+		})
+
+	return result != nil
 }
