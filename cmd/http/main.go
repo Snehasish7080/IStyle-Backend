@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/zone/IStyle/config"
+	"github.com/zone/IStyle/internal/explore"
 	"github.com/zone/IStyle/internal/feed"
 	"github.com/zone/IStyle/internal/middleware"
 	"github.com/zone/IStyle/internal/search"
@@ -102,8 +103,13 @@ func buildServer(env config.EnvVars) (*fiber.App, func(), error) {
 
 	// search domain
 	searchStore := search.NewSearchStorage(db, env.NEO4jDB_NAME)
-	searchController := search.NewTagController(searchStore)
+	searchController := search.NewSearchController(searchStore)
 	search.AddSearchRoutes(app, appMiddleware, searchController)
+
+	// explore domain
+	exploreStore := explore.NewExploreStorage(db, env.NEO4jDB_NAME)
+	exploreController := explore.NewFeedController(exploreStore)
+	explore.AddExploreRoutes(app, appMiddleware, exploreController)
 
 	return app, func() {
 		storage.CloseNeo4j(db)

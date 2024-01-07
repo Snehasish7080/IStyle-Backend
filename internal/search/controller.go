@@ -10,7 +10,7 @@ type SearchController struct {
 	storage *SearchStorage
 }
 
-func NewTagController(storage *SearchStorage) *SearchController {
+func NewSearchController(storage *SearchStorage) *SearchController {
 	return &SearchController{
 		storage: storage,
 	}
