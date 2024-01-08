@@ -49,14 +49,35 @@ func (e *ExploreStorage) explore(userName string, ctx context.Context) ([]explor
 		func(tx neo4j.ManagedTransaction) (any, error) {
 			result, err := tx.Run(ctx,
 				`
-      MATCH(u:User{userName:$userName})
-      MATCH(p:User)
-      MATCH(s:Style) 
-      WHERE ((s)-[:TAG_TO]->(:Tag)<-[:MARK_FAV]-(u) AND NOT (s)-[:CREATED_BY]->(u) AND (s)-[:CREATED_BY]->(p)) OR ((s)-[:CREATED_BY]->(p)<-[:FOLLOWING]-(u))
-      OPTIONAL MATCH (:User)-[r:MARKED_TREND]->(s)
-      OPTIONAL MATCH (s)-[:LINKED_TO]->(l:Link)
-      WITH s,l,p,u, COUNT(r) AS trendCount
-      RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic, isFollowing:EXISTS((u)-[:FOLLOWING]->(p))} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, trendCount,s.created_at AS created_at ORDER BY s.created_at DESC
+        MATCH(u:User{userName:$userName})
+        MATCH((u)-[:MARK_FAV]->(:Tag)<-[:TAG_TO]-(s:Style))
+        OPTIONAL MATCH (:User)-[r:MARKED_TREND]->(s)
+        OPTIONAL MATCH (s)-[:LINKED_TO]->(l:Link)
+        MATCH (s)-[:CREATED_BY]->(p:User)
+        WITH s,l,u,p, COUNT(r) AS trendCount
+        RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic, isFollowing:EXISTS((u)-[:FOLLOWING]->(p))} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, trendCount,s.created_at AS created_at
+
+        UNION
+
+        OPTIONAL MATCH((u)-[:MARKED_TREND]->(ts:Style))
+        OPTIONAL MATCH ((ts)-[:TAG_TO]->(:Tag)<-[:TAG_TO]-(rs:Style))
+        WHERE ts.uuid<>rs.uuid
+        OPTIONAL MATCH (:User)-[r:MARKED_TREND]->(rs)
+        OPTIONAL MATCH (rs)-[:LINKED_TO]->(l:Link)
+        MATCH (rs)-[:CREATED_BY]->(p:User)
+        WITH rs,l,u,p, COUNT(r) AS trendCount
+        RETURN rs.uuid AS id, rs.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic, isFollowing:EXISTS((u)-[:FOLLOWING]->(p))} AS user, EXISTS((u)-[:MARKED_TREND]->(rs)) AS isMarked, trendCount,rs.created_at AS created_at
+
+        UNION
+
+        OPTIONAL MATCH((u)-[:MARKED_TREND]->(ts:Style))
+        OPTIONAL MATCH ((ts)-[:HASHTAG_TO]->(:Hashtag)<-[:HASHTAG_TO]-(hs:Style))
+        WHERE ts.uuid <> hs.uuid
+        OPTIONAL MATCH (:User)-[r:MARKED_TREND]->(hs)
+        OPTIONAL MATCH (hs)-[:LINKED_TO]->(l:Link)
+        MATCH (hs)-[:CREATED_BY]->(p:User)
+        WITH hs,l,u,p, COUNT(r) AS trendCount
+        RETURN hs.uuid AS id, hs.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic, isFollowing:EXISTS((u)-[:FOLLOWING]->(p))} AS user, EXISTS((u)-[:MARKED_TREND]->(hs)) AS isMarked, trendCount,hs.created_at AS created_at
       `,
 				map[string]interface{}{
 					"userName": userName,
