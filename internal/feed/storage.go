@@ -41,7 +41,7 @@ type user struct {
 	IsFollwing bool   `json:"isFollowing"`
 }
 
-func (f *FeedStorage) feed(userName string, ctx context.Context) ([]feedStyle, error) {
+func (f *FeedStorage) feed(userName string, cursor string, ctx context.Context) ([]feedStyle, error) {
 	session := f.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: f.dbName, AccessMode: neo4j.AccessModeWrite})
 	defer session.Close(ctx)
 
@@ -56,10 +56,13 @@ func (f *FeedStorage) feed(userName string, ctx context.Context) ([]feedStyle, e
       OPTIONAL MATCH (:User)-[r:MARKED_TREND]->(s)
       OPTIONAL MATCH (s)-[:LINKED_TO]->(l:Link)
       WITH s,l,p,u, COUNT(r) AS trendCount
-      RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic, isFollowing:EXISTS((u)-[:FOLLOWING]->(p))} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, trendCount,s.created_at AS created_at ORDER BY s.created_at DESC
+      WHERE s.uuid>$cursor
+      RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic, isFollowing:EXISTS((u)-[:FOLLOWING]->(p))} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, trendCount,s.created_at AS created_at ORDER BY s.uuid DESC
+      LIMIT 30
       `,
 				map[string]interface{}{
 					"userName": userName,
+					"cursor":   cursor,
 				},
 			)
 			if err != nil {

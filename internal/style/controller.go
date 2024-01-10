@@ -394,3 +394,38 @@ func (s *StyleController) getStyleById(c *fiber.Ctx) error {
 		Success: true,
 	})
 }
+
+type getALlLikedUsersResponse struct {
+	Data    []likedUser `json:"data"`
+	Message string      `json:"message"`
+	Success bool        `json:"success"`
+}
+
+func (s *StyleController) getALlLikedUsers(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	if id == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(getALlLikedUsersResponse{
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	result, err := s.storage.likedUsers(id, c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(getALlLikedUsersResponse{
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+
+	jsonData, _ := json.Marshal(result)
+	var structData []likedUser
+	json.Unmarshal(jsonData, &structData)
+
+	return c.Status(fiber.StatusBadRequest).JSON(getALlLikedUsersResponse{
+		Data:    structData,
+		Message: "found successfully",
+		Success: true,
+	})
+}

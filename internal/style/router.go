@@ -16,6 +16,7 @@ func AddStyleRoutes(app *fiber.App, middleware *middleware.AuthMiddleware, contr
 	style.Post("/unmark-trend", controller.unMarkTrend)
 	style.Post("/style-clicked", controller.styleClicked)
 	style.Get("/:id", controller.getStyleById)
+	style.Get("/liked/:id", controller.getALlLikedUsers)
 
 	styleByUserName := style.Group("/user/:userName", middleware.CheckUserNameExists)
 	styleByUserName.Get("/", controller.getAllStylesByUserName)

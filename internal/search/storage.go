@@ -106,7 +106,8 @@ func (s *SearchStorage) stylesByText(text string, ctx context.Context) ([]styles
         OPTIONAL MATCH (s)-[:LINKED_TO]->(l:Link)
         OPTIONAL MATCH (:User)-[m:MARKED_TREND]->(s)
         WITH s,l,p, COUNT(m) AS trendCount
-        RETURN s.uuid as id, s.image as image, s.created_at as created_at, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic} as user,trendCount`,
+        RETURN s.uuid as id, s.image as image, s.created_at as created_at, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic} as user, trendCount
+        `,
 				map[string]any{
 					"text": text + "*",
 				},

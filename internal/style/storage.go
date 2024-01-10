@@ -284,6 +284,65 @@ func (s *StyleStorage) styleById(userName string, id string, ctx context.Context
 	return style, nil
 }
 
+type likedUser struct {
+	UserName   string `json:"userName"`
+	ProfilePic string `json:"profilePic"`
+}
+
+func (s *StyleStorage) likedUsers(id string, ctx context.Context) ([]likedUser, error) {
+	session := s.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: s.dbName, AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	isStyleExist := s.checkStyleExists(id, ctx)
+
+	if !isStyleExist {
+		return nil, errors.New("invalid request")
+	}
+
+	users, err := session.ExecuteRead(ctx,
+		func(tx neo4j.ManagedTransaction) (any, error) {
+			result, err := tx.Run(ctx,
+				`
+      MATCH(s:Style{uuid:$id})
+        WHERE (s)<-[:MARKED_TREND]-(u:User)
+      RETURN u.userName AS userName, s.profilePic As profilePic 
+      `,
+				map[string]interface{}{
+					"id": id,
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			record, err := result.Collect(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			return record, nil
+		})
+	// handle error
+	if err != nil {
+		return nil, err
+	}
+
+	var arr []likedUser
+	for _, user := range users.([]*neo4j.Record) {
+		jsonData, _ := json.Marshal(user.AsMap())
+
+		var structData likedUser
+		json.Unmarshal(jsonData, &structData)
+
+		arr = append(arr, likedUser{
+			UserName:   structData.UserName,
+			ProfilePic: structData.ProfilePic,
+		})
+	}
+
+	return arr, nil
+}
+
 func (s *StyleStorage) checkStyleExists(id string, ctx context.Context) bool {
 	session := s.db.NewSession(ctx, neo4j.SessionConfig{DatabaseName: s.dbName, AccessMode: neo4j.AccessModeRead})
 	defer session.Close(ctx)

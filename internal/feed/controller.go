@@ -26,6 +26,8 @@ type getUserFeedResponse struct {
 }
 
 func (f *FeedController) getUserFeed(c *fiber.Ctx) error {
+	cursor := c.Query("cursor")
+
 	localData := c.Locals("userName")
 	userName, cnvErr := localData.(string)
 
@@ -35,7 +37,7 @@ func (f *FeedController) getUserFeed(c *fiber.Ctx) error {
 			Success: false,
 		})
 	}
-	result, err := f.storage.feed(userName, c.Context())
+	result, err := f.storage.feed(userName, cursor, c.Context())
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(getUserFeedResponse{
 			Message: err.Error(),
