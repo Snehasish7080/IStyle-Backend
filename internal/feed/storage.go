@@ -47,8 +47,40 @@ func (f *FeedStorage) feed(userName string, cursor string, ctx context.Context) 
 
 	styles, err := session.ExecuteRead(ctx,
 		func(tx neo4j.ManagedTransaction) (any, error) {
-			result, err := tx.Run(ctx,
-				`
+			if cursor != "" {
+				result, err := tx.Run(ctx,
+					`
+      MATCH(u:User{userName:$userName})
+      MATCH(p:User)
+      MATCH(s:Style) 
+      WHERE ((s)-[:TAG_TO]->(:Tag)<-[:MARK_FAV]-(u) AND NOT (s)-[:CREATED_BY]->(u) AND (s)-[:CREATED_BY]->(p)) OR ((s)-[:CREATED_BY]->(p)<-[:FOLLOWING]-(u))
+      OPTIONAL MATCH (:User)-[r:MARKED_TREND]->(s)
+      OPTIONAL MATCH (s)-[:LINKED_TO]->(l:Link)
+      WITH s,l,p,u, COUNT(r) AS trendCount
+      WHERE s.uuid<$cursor
+      RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic, isFollowing:EXISTS((u)-[:FOLLOWING]->(p))} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, trendCount,s.created_at AS created_at ORDER BY s.uuid DESC
+      LIMIT 4
+      `,
+					map[string]interface{}{
+						"userName": userName,
+						"cursor":   cursor,
+					},
+				)
+				if err != nil {
+					return nil, err
+				}
+
+				record, err := result.Collect(ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				return record, nil
+
+			} else {
+
+				result, err := tx.Run(ctx,
+					`
       MATCH(u:User{userName:$userName})
       MATCH(p:User)
       MATCH(s:Style) 
@@ -58,23 +90,25 @@ func (f *FeedStorage) feed(userName string, cursor string, ctx context.Context) 
       WITH s,l,p,u, COUNT(r) AS trendCount
       WHERE s.uuid>$cursor
       RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic, isFollowing:EXISTS((u)-[:FOLLOWING]->(p))} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, trendCount,s.created_at AS created_at ORDER BY s.uuid DESC
-      LIMIT 30
+      LIMIT 4
       `,
-				map[string]interface{}{
-					"userName": userName,
-					"cursor":   cursor,
-				},
-			)
-			if err != nil {
-				return nil, err
-			}
+					map[string]interface{}{
+						"userName": userName,
+						"cursor":   cursor,
+					},
+				)
+				if err != nil {
+					return nil, err
+				}
 
-			record, err := result.Collect(ctx)
-			if err != nil {
-				return nil, err
-			}
+				record, err := result.Collect(ctx)
+				if err != nil {
+					return nil, err
+				}
 
-			return record, nil
+				return record, nil
+
+			}
 		})
 	if err != nil {
 		return nil, err
