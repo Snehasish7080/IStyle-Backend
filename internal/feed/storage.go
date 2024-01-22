@@ -57,8 +57,8 @@ func (f *FeedStorage) feed(userName string, cursor string, ctx context.Context) 
       OPTIONAL MATCH (:User)-[r:MARKED_TREND]->(s)
       OPTIONAL MATCH (s)-[:LINKED_TO]->(l:Link)
       WITH s,l,p,u, COUNT(r) AS trendCount
-      WHERE s.uuid<$cursor
-      RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic, isFollowing:EXISTS((u)-[:FOLLOWING]->(p))} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, trendCount,s.created_at AS created_at ORDER BY s.uuid DESC
+      WHERE s.created_at<datetime($cursor)
+      RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic, isFollowing:EXISTS((u)-[:FOLLOWING]->(p))} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, trendCount,s.created_at AS created_at ORDER BY s.created_at DESC
       LIMIT 4
       `,
 					map[string]interface{}{
@@ -88,8 +88,7 @@ func (f *FeedStorage) feed(userName string, cursor string, ctx context.Context) 
       OPTIONAL MATCH (:User)-[r:MARKED_TREND]->(s)
       OPTIONAL MATCH (s)-[:LINKED_TO]->(l:Link)
       WITH s,l,p,u, COUNT(r) AS trendCount
-      WHERE s.uuid>$cursor
-      RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic, isFollowing:EXISTS((u)-[:FOLLOWING]->(p))} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, trendCount,s.created_at AS created_at ORDER BY s.uuid DESC
+      RETURN s.uuid AS id, s.image AS image, collect(l{id:l.uuid,url:l.url,image:l.image}) AS links, {userName:p.userName, profilePic:p.profilePic, isFollowing:EXISTS((u)-[:FOLLOWING]->(p))} AS user, EXISTS((u)-[:MARKED_TREND]->(s)) AS isMarked, trendCount,s.created_at AS created_at ORDER BY s.created_at DESC
       LIMIT 4
       `,
 					map[string]interface{}{
