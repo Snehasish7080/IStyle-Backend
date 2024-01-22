@@ -190,7 +190,7 @@ func (s *StyleStorage) clicked(userName string, id string, ctx context.Context) 
 		return "", err
 	}
 
-	return "trend successfully", nil
+	return "clicked successfully", nil
 }
 
 type styleById struct {
@@ -227,7 +227,7 @@ func (s *StyleStorage) styleById(userName string, id string, ctx context.Context
 			result, err := tx.Run(ctx,
 				`MATCH(u:User{userName:$userName})
          MATCH (s:Style{uuid: $id})
-         MATCH ((s)-[:LINKED_TO]->(l:Link))
+         OPTIONAL MATCH ((s)-[:LINKED_TO]->(l:Link))
          MATCH ((s)-[:CREATED_BY]->(p:User))
          OPTIONAL MATCH ((:User)-[m:MARKED_TREND]->(s))
          WITH s,l,u,p, COUNT(m) AS trendCount
@@ -254,8 +254,15 @@ func (s *StyleStorage) styleById(userName string, id string, ctx context.Context
 			user, _ := record.Get("user")
 
 			var arr []styleLink
+			var transFormedArr []styleLink
 			jsonData, _ := json.Marshal(links)
 			json.Unmarshal(jsonData, &arr)
+
+			for _, arrLink := range arr {
+				if arrLink.Id != "" {
+					transFormedArr = append(transFormedArr, arrLink)
+				}
+			}
 
 			var postUser styleUser
 			userjsonData, _ := json.Marshal(user)
@@ -268,7 +275,7 @@ func (s *StyleStorage) styleById(userName string, id string, ctx context.Context
 			return &styleById{
 				Id:         id.(string),
 				Image:      image.(string),
-				Links:      arr,
+				Links:      transFormedArr,
 				TrendCount: trendCount.(int64),
 				IsMarked:   isMarked.(bool),
 				User:       postUser,
