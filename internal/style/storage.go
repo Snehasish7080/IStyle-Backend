@@ -179,7 +179,7 @@ func (s *StyleStorage) clicked(userName string, id string, ctx context.Context) 
 				`
 				MATCH (s:Style {uuid:$id})
 				MATCH (u:User {userName:$userName})
-				CREATE (u)-[:CLICKED]->(s)
+				MERGE (u)-[:CLICKED]->(s)
 				`,
 				map[string]interface{}{
 					"userName": userName,
